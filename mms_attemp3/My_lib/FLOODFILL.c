@@ -42,34 +42,103 @@ void MazeUpdate(Maze *maze, MousePose *currentPose)
 				maze->HorizontalWall[currentPose->y + 1][currentPose->x] = Wall_Front();
 				maze->VerticalWall[currentPose->y][currentPose->x] = Wall_Left() ;
 				maze->VerticalWall[currentPose->y][currentPose->x + 1] = Wall_Right() ;
-				cur_phase = ALGORITHM_PHR;
+				cur_phase = FINDPATH_PHR;
 				break;
 			case EAST:
 				maze->VerticalWall[currentPose->y][currentPose->x + 1] = Wall_Front();
 				maze->HorizontalWall[currentPose->y + 1][currentPose->x] = Wall_Left();
 				maze->HorizontalWall[currentPose->y][currentPose->x] = Wall_Right();
-				cur_phase = ALGORITHM_PHR;
+				cur_phase = FINDPATH_PHR;
 				break;
 			case SOUTH:
 				maze->HorizontalWall[currentPose->y][currentPose->x] = Wall_Front();
 				maze->VerticalWall[currentPose->y][currentPose->x + 1] = Wall_Left() ;
 				maze->VerticalWall[currentPose->y][currentPose->x] = Wall_Right() ;
-				cur_phase = ALGORITHM_PHR;
+				cur_phase = FINDPATH_PHR;
 			case WEST:
 				maze->VerticalWall[currentPose->y][currentPose->x] = Wall_Front();
 				maze->HorizontalWall[currentPose->y][currentPose->x] = Wall_Left();
 				maze->HorizontalWall[currentPose->y + 1][currentPose->x] = Wall_Right();
-				cur_phase = ALGORITHM_PHR;
+				cur_phase = FINDPATH_PHR;
 			default:
 				break;
 		}
 	}
 }
-void MazeFloodFill(Maze *maze, Cell_Queue*cellqueue, MousePose *mousepose)
+void MazeFloodFill(Maze *maze, Cell_Queue*q, MousePose *mousepose)
 {
-	if(cur_phase == ALGORITHM_PHR)
+	if(cur_phase == ALGORITHM1_PHR)
 	{
+		EnqCellQueue(q, mousepose->x, mousepose->y);
+				cur_phase = ALGORITHM2_PHR;
+	}
+	else if(cur_phase == ALGORITHM2_PHR)
+	{
+		Cell *q1 = DegCellQueue(q);
+		int8_t x = q1->x;
+		int8_t y = q1->y;
 
+		int16_t min_value = 0;
+		if(!maze->HorizontalWall[y+1][x])
+		{
+			if(maze->cells[x][y+1].value + 1 == maze->cells[x][y].value)
+			{
+				return;
+			}
+			else
+			{
+				min_value = maze->cells[x][y+1].value;
+			}
+		}
+		if(!maze->VerticalWall[y][x+1])
+		{
+			if(maze->cells[x+1][y].value + 1 == maze->cells[x][y].value)
+			{
+				return;
+			}
+			else
+			{
+				min_value = maze->cells[x+1][y].value < min_value ? maze->cells[x+1][y].value : min_value;
+			}
+		}
+		if(!maze->HorizontalWall[y][x])
+		{
+			if(maze->cells[x][y - 1].value + 1 == maze->cells[x][y].value)
+			{
+				return;
+			}
+			else
+			{
+				min_value = maze->cells[x-1][y].value < min_value ? maze->cells[x-1][y].value : min_value;
+			}
+		}
+		if(!maze->VerticalWall[y][x])
+		{
+			if(maze->cells[x-1][y].value + 1 == maze->cells[x][y].value)
+			{
+				return;
+			}
+			else
+			{
+				min_value = maze->cells[x-1][y].value < min_value ? maze->cells[x-1][y].value : min_value;
+			}
+		}
+		if(min_value != 0)
+		{
+			maze->cells[x][y].value = min_value + 1;
+			if(!maze->HorizontalWall[y+1][x]) EnqCellQueue(q, x, y + 1);
+			if(!maze->VerticalWall[y][x+1]) EnqCellQueue(q, x + 1, y);
+			if(!maze->HorizontalWall[y][x]) EnqCellQueue(q, x, y - 1);
+			if(!maze->VerticalWall[y][x]) EnqCellQueue(q, x - 1, y);
+		}
+	}
+	if(CellqueueEmpty(q))
+	{
+		cur_phase = FINDPATH_PHR;
+	}
+	else
+	{
+		cur_phase = ALGORITHM2_PHR;
 	}
 }
 bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
@@ -228,6 +297,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 
 	return false;
 	}
+	return false;
 }
 bool LegalCell(int8_t curX ,int8_t curY, int8_t nextX, int8_t nextY, Maze *maze)
 {

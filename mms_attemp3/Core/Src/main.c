@@ -172,6 +172,12 @@ int main(void)
   HAL_ADCEx_Calibration_Start(&hadc1);
   ir_status = OKAY;
 
+  //khởi tạo maze
+  //khởi tạo danh sách cell
+  //khởi tạo danh sách hành động
+  //khởi tạo pose
+  //
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -195,38 +201,40 @@ int main(void)
 		  Motor_SetPwm(&Right_motor);
 
 	          // high-level flow
-//	          switch(phase)
-//	          {
-//	              case SENSE_PHR:
-//	                  // đọc sensor khi đứng giữa ô
-//	                  Read_IR_Sensors();
-//	                  break;
-//
-//	              case UPDATE_PHR:
-//	                  // cập nhật maze từ dữ liệu sensor
-//	                  Maze_Update();
-//	                  phase = ALGORITHM_PHR;
-//	                  break;
-//
-//	              case ALGORITHM_PHR:
-//	                  // chạy thuật toán quyết định hành động
-//	                  Decision d = Algorithm_Decide();
-//	                  Plan_PushSequence(d);     // đổ lệnh vào queue
-//	                  phase = EXECUTE_PHR;
-//	                  break;
-//
-//	              case EXECUTE_PHR:
-//	                  Executor_Tick();          // chạy từng action (Move_forward/Turn...)
-//	                  if(Executor_Done()) {
-//	                      phase = COMPLETE_PHR;
-//	                  }
-//	                  break;
-//
-//	              case COMPLETE_PHR:
-//	                  // đã hoàn thành 1 bước → quay lại sense
-//	                  phase = SENSE_PHR;
-//	                  break;
-//	          }
+	          switch(phase)
+	          {
+	              case SENSE_PHR:
+	                  // đọc sensor khi đứng giữa ô
+	                  Read_IR_Sensors();
+	                  break;
+
+	              case UPDATE_PHR:
+	                  // cập nhật maze từ dữ liệu sensor
+	                  MazeUpdate(maze, currentpose);
+	                  break;
+
+	              case FINDPATH_PHR:
+	            	  if(FindNextCell(maze, mousepose, action_stack))
+	            	  {
+	            		  cur_phase = EXECUTE_PHR;
+	            	  }
+	            	  else
+	            	  {
+	            		  cur_phase = ALGORITHM1_PHR;
+	            	  }
+	              case ALGORITHM1_PHR:
+	                  MazeFloodFill(maze, q, mousepose);
+	                  break;
+	              case ALGORITHM2_PHR:
+	              	  MazeFloodFill(maze, q, mousepose);
+	              	  break;
+	              case EXECUTE_PHR:
+	            	  //thiếu hàm thực thi các hành động
+	              case COMPLETE_PHR:
+	                  // hoàn thành maze
+
+	                  break;
+	          }
 	      }
   }
   /* USER CODE END 3 */
