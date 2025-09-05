@@ -36,8 +36,11 @@ volatile int16_t prog_L = 0;
 float s_require = 150;
 float s_remain = 0;
 
-float st_require = 60;
+float st_require = 55;
 float st_remain = 0;
+
+float stb_require = 110;
+float stb_remain = 0;
 
 float angle_require = 0;
 float angle_remain = 0;
@@ -108,52 +111,6 @@ void Motor_GetSpeed(Motor *_motor)
 
 }
 
-//----------------------Control
-//void Motor_SetDir(Motor *motor)
-//{
-////	switch (motor->id) {
-////		case RIGHT:
-//	if(motor->id == RIGHT){
-//			if(motor->Pid_output > 0)
-//			{
-//				HAL_GPIO_WritePin(motor->IN1_Port, motor->IN1_Pin, SET);
-//				HAL_GPIO_WritePin(motor->IN2_Port, motor->IN2_Pin, RESET);
-//			}
-//			else if(motor->Pid_output < 0)
-//			{
-//				HAL_GPIO_WritePin(motor->IN1_Port, motor->IN1_Pin, SET);
-//				HAL_GPIO_WritePin(motor->IN2_Port, motor->IN2_Pin, RESET);
-//			}
-//			else
-//			{
-//				HAL_GPIO_WritePin(motor->IN1_Port, motor->IN1_Pin, RESET);
-//				HAL_GPIO_WritePin(motor->IN2_Port, motor->IN2_Pin, RESET);
-//			}
-//			countR++;
-//	}
-////			break;
-////		case LEFT:
-//	else if (motor->id == LEFT) {
-//			if(motor->pwm > 0)
-//			{
-//				HAL_GPIO_WritePin(motor->IN1_Port, motor->IN1_Pin, RESET);
-//				HAL_GPIO_WritePin(motor->IN2_Port, motor->IN2_Pin, SET);
-//			}
-//			else if(motor->pwm < 0)
-//			{
-//				HAL_GPIO_WritePin(motor->IN1_Port, motor->IN1_Pin, RESET);
-//				HAL_GPIO_WritePin(motor->IN2_Port, motor->IN2_Pin, SET);
-//			}
-//			else
-//			{
-//				HAL_GPIO_WritePin(motor->IN1_Port, motor->IN1_Pin, RESET);
-//				HAL_GPIO_WritePin(motor->IN2_Port, motor->IN2_Pin, RESET);
-//			}
-//			countL++;
-//	}
-////		default:
-////			break;
-//}
 void PWM_limit(Motor *motor)
 {
 	if(motor->Pid_output > 400)
@@ -288,7 +245,57 @@ void Move_forward(Motor *_motorL, Motor *_motorR)
 		Motor_SetTarget(_motorR, (double)v_next);
 		Motor_SetTarget(_motorL, (double)v_next);
 }
-void Move_backwar(Motor *_motorL, Motor *_motorR);
+void Move_backwar(Motor *_motorL, Motor *_motorR)
+{
+	if(cur_state == IDLE && time_out)
+	{
+		encoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
+		encoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
+		cur_state = TURN_BACK;
+		stb_remain = stb_require;
+		v_next = a_up*DT;
+	}
+	if(cur_state == TURN_BACK)
+	{
+		encoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
+		encoder_now_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
+		prog_R = encoder_now_R - encoder_prev_R;
+		prog_L = encoder_now_L - encoder_prev_L;
+
+		st_remain = st_require - 0.5f*(abs(prog_L) + abs(prog_R))*MM;  // xung còn lại và chuyển sang mm
+		if(st_remain < 1)
+		{
+			cur_state = IDLE;
+			v_next = 0;
+			Motor_SetTarget(_motorR, (double)v_next);
+			Motor_SetTarget(_motorL, (double)v_next);
+			time_out = false;
+			return;
+
+		}
+
+		double v = 0.5*( - _motorL->cur_speed + _motorR->cur_speed)*MMS;
+		v_stop = sqrt(2*a_down*st_remain);
+
+		if(v > v_stop)
+		{
+			v_next = fmax(v - a_down*DT, 0);
+		}
+		else if(v < fmin(v_max, v_stop))
+		{
+			v_next = fmin( v + a_up*DT, fmin(v_max, v_stop) );
+		}
+		else
+		{
+			v_next = fmin(v_max, v_stop);
+		}
+
+	}
+
+	v_next = v_next/MMS;
+	Motor_SetTarget(_motorR, (double)v_next);
+	Motor_SetTarget(_motorL, -((double)v_next));
+}
 void Move_Left(Motor *_motorL, Motor *_motorR)
 {
 	if(cur_state == IDLE && time_out)
@@ -341,7 +348,57 @@ void Move_Left(Motor *_motorL, Motor *_motorR)
 	Motor_SetTarget(_motorL, -((double)v_next));
 
 }
-void Move_Right(Motor *_motorL, Motor *_motorR);
+void Move_Right(Motor *_motorL, Motor *_motorR)
+{
+	if(cur_state == IDLE && time_out)
+	{
+		encoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
+		encoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
+		cur_state = TURN_RIGHT;
+		st_remain = st_require;
+		v_next = a_up*DT;
+	}
+	if(cur_state == TURN_RIGHT)
+	{
+		encoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
+		encoder_now_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
+		prog_R = encoder_now_R - encoder_prev_R;
+		prog_L = encoder_now_L - encoder_prev_L;
+
+		st_remain = st_require - 0.5f*(abs(prog_L) + abs(prog_R))*MM;  // xung còn lại và chuyển sang mm
+		if(st_remain < 1)
+		{
+			cur_state = IDLE;
+			v_next = 0;
+			Motor_SetTarget(_motorR, (double)v_next);
+			Motor_SetTarget(_motorL, (double)v_next);
+			time_out = false;
+			return;
+
+		}
+
+		double v = 0.5*( + _motorL->cur_speed - _motorR->cur_speed)*MMS;
+		v_stop = sqrt(2*a_down*st_remain);
+
+		if(v > v_stop)
+		{
+			v_next = fmax(v - a_down*DT, 0);
+		}
+		else if(v < fmin(v_max, v_stop))
+		{
+			v_next = fmin( v + a_up*DT, fmin(v_max, v_stop) );
+		}
+		else
+		{
+			v_next = fmin(v_max, v_stop);
+		}
+
+	}
+
+	v_next = v_next/MMS;
+	Motor_SetTarget(_motorR, -((double)v_next));
+	Motor_SetTarget(_motorL, (double)v_next);
+}
 
 
 

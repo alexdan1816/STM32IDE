@@ -26,12 +26,17 @@
 #include <motor.h>
 #include <IR.h>
 #include <stdbool.h>
+#include <FSM.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 PID_TypeDef RPID;
 PID_TypeDef LPID;
+PID_TypeDef RGPID;
+PID_TypeDef LGPID;
+PID_TypeDef REPID;
+PID_TypeDef LRPID;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -65,9 +70,12 @@ Motor *pRight = &Right_motor;
 uint16_t gyro_bias_count = 0;
 float gyro_off_set = 0;
 uint32_t prevtime = 0;
+uint32_t velocity_count = 0;
 
 
 volatile bool tick_start;
+volatile bool tick_2ms = false;
+volatile bool tick_50ms = false;
 
 /* USER CODE END PV */
 
@@ -129,14 +137,15 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
+  //Motor
   Motor_Init(&Right_motor, RIGHT,
 		  	 AIN1_GPIO_Port, AIN1_Pin, AIN2_GPIO_Port, AIN2_Pin,
 			 &htim2, TIM_CHANNEL_2, &htim3, 0.3, 1.9, 0.003);
   Motor_Init(&Left_motor, LEFT,
 		  	 BIN1_GPIO_Port, BIN1_Pin, BIN1_GPIO_Port, BIN2_Pin,
 			 &htim2, TIM_CHANNEL_1, &htim4, 0.3, 1.9, 0.003);
-  Motor_SetTarget(pRight, 200);
-  Motor_SetTarget(pLeft, 200);
+  Motor_SetTarget(pRight, 0);
+  Motor_SetTarget(pLeft, 0);
   HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
   __HAL_TIM_SET_COUNTER(&htim3, 0);
@@ -144,7 +153,6 @@ int main(void)
   __HAL_TIM_SET_COUNTER(&htim4, 0);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-
   PID(&RPID,
 	  &(pRight->cur_speed),
 	  &(pRight->Pid_output),
@@ -164,13 +172,15 @@ int main(void)
   PID_SetMode(&LPID, _PID_MODE_AUTOMATIC);
   PID_SetSampleTime(&LPID, 50);
   PID_SetOutputLimits(&LPID, -499, 499);
+
+
   cur_state = IDLE;
-
-
+  //gyro
   LSM6DS3_Init();
-
+  //IR
   HAL_ADCEx_Calibration_Start(&hadc1);
   ir_status = OKAY;
+
 
   //khởi tạo maze
   //khởi tạo danh sách cell
@@ -189,7 +199,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  if(tick_start)  // tick 50ms
 	  {
-		  tick_start = 0;
+		  tick_start = false;
 
 		  // luôn update low-level
 		  Gyro_UpdateAngle();
@@ -200,42 +210,70 @@ int main(void)
 		  Motor_SetPwm(&Left_motor);
 		  Motor_SetPwm(&Right_motor);
 
-	          // high-level flow
-	          switch(phase)
-	          {
-	              case SENSE_PHR:
-	                  // đọc sensor khi đứng giữa ô
-	                  Read_IR_Sensors();
-	                  break;
-
-	              case UPDATE_PHR:
-	                  // cập nhật maze từ dữ liệu sensor
-	                  MazeUpdate(maze, currentpose);
-	                  break;
-
-	              case FINDPATH_PHR:
-	            	  if(FindNextCell(maze, mousepose, action_stack))
-	            	  {
-	            		  cur_phase = EXECUTE_PHR;
-	            	  }
-	            	  else
-	            	  {
-	            		  cur_phase = ALGORITHM1_PHR;
-	            	  }
-	              case ALGORITHM1_PHR:
-	                  MazeFloodFill(maze, q, mousepose);
-	                  break;
-	              case ALGORITHM2_PHR:
-	              	  MazeFloodFill(maze, q, mousepose);
-	              	  break;
-	              case EXECUTE_PHR:
-	            	  //thiếu hàm thực thi các hành động
-	              case COMPLETE_PHR:
-	                  // hoàn thành maze
-
-	                  break;
-	          }
-	      }
+//		   switch(cur_phase) {
+//		        case SENSOR_PHR:
+//		            // Đọc IR khi đứng giữa ô
+//		            ReadIR(&hadc1);
+//		            break;
+//
+//		        case UPDATE_PHR:
+//		            // Cập nhật maze từ dữ liệu sensor
+//		            MazeUpdate(&maze, &currentpose);
+//		            break;
+//
+//		        case FINDPATH_PHR:
+//		            if (FindNextCell(&maze, &currentpose, &action)) {
+//		                cur_phase = EXECUTE_PHR;
+//		            } else {
+//		                cur_phase = ALGORITHM1_PHR;
+//		            }
+//		            break;
+//
+//		        case ALGORITHM1_PHR:
+//
+//		        case ALGORITHM2_PHR:
+//		            MazeFloodFill(&maze, &cellqueue, &currentpose);
+//		            break;
+//
+//		        case EXECUTE_PHR: {
+//		            Action_type act = Execute_act(&action);
+//		            if (act == NONE_ACT) {
+//		                cur_phase = COMPLETE_PHR;
+//		            } else {
+//		                // Thực thi hành động
+//		                switch (act) {
+//		                    case MOVE_ACT:      Move_forward(pLeft, pRight); break;
+//		                    case TURN_LEFT_ACT: Move_Left(pLeft, pRight);    break;
+//		                    case TURN_RIGHT_ACT:Move_Right(pLeft, pRight);   break;
+//		                    case TURN_BACK_ACT: Move_Backward(pLeft, pRight);break;
+//		                    default: break;
+//		                }
+//		                // Cập nhật pose sau khi hành động
+//		                PoseUpdate(&currentpose, currentpose.head, act);
+//		                cur_phase = SENSOR_PHR; // quay lại đọc sensor
+//		            }
+//		            break;
+//		        }
+//
+//		        case COMPLETE_PHR:
+//		            // Đã xong maze
+//		            Motor_SetTarget(pLeft, 0);
+//		            Motor_SetTarget(pRight, 0);
+//		            break;
+//
+//		        default:
+//		            break;
+//		    }
+//		  if(HAL_GetTick() - prevtime >3000 && time_out == false)
+//		  {
+//			  time_out = true;
+//			  prevtime = HAL_GetTick();
+//		  }
+//		  Move_forward(pLeft, pRight);
+//		  cur_phase = SENSOR_PHR;
+//		  ReadIR(&hadc1);
+//		  HAL_Delay(100);
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -669,10 +707,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim->Instance == TIM1)
-	{
-		tick_start = 1;
-	}
+    if(htim->Instance == TIM1)   // Timer đang chạy 2ms
+    {
+      tick_start = true;
+    }
 }
 /* USER CODE END 4 */
 

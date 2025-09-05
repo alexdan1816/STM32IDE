@@ -55,11 +55,13 @@ void MazeUpdate(Maze *maze, MousePose *currentPose)
 				maze->VerticalWall[currentPose->y][currentPose->x + 1] = Wall_Left() ;
 				maze->VerticalWall[currentPose->y][currentPose->x] = Wall_Right() ;
 				cur_phase = FINDPATH_PHR;
+				break;
 			case WEST:
 				maze->VerticalWall[currentPose->y][currentPose->x] = Wall_Front();
 				maze->HorizontalWall[currentPose->y][currentPose->x] = Wall_Left();
 				maze->HorizontalWall[currentPose->y + 1][currentPose->x] = Wall_Right();
 				cur_phase = FINDPATH_PHR;
+				 break;
 			default:
 				break;
 		}
@@ -349,4 +351,7 @@ void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y)
 	return;
 }
 
+void ExecuteAct(Action_Stack *s)
+{
 
+}
