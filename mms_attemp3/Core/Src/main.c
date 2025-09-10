@@ -338,7 +338,15 @@ int main(void)
 						}
 						break;
 					case COOL_DOWN:
-
+						if(HAL_GetTick() - prevtime > 1000)
+						{
+							PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
+							PID_SetMode(&RPID,_PID_MODE_AUTOMATIC);
+							PID_SetMode(&LPID,_PID_MODE_AUTOMATIC);
+							cur_state = IDLE;
+							prevtime = HAL_GetTick();
+							cur_phase = EXECUTE_PHR;
+						}
 					default:
 						break;
 				}
@@ -394,8 +402,8 @@ int main(void)
 //			default:
 //				break;
 //		}
-//		  		  Motor_SetPwm(&Left_motor);
-//		  		  Motor_SetPwm(&Right_motor);
+		  		  Motor_SetPwm(&Left_motor);
+		  		  Motor_SetPwm(&Right_motor);
 
 	  }
   }
