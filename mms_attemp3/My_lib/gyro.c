@@ -8,6 +8,8 @@
 #include <gyro.h>
 #include "stdlib.h"
 #include "stdbool.h"
+#include "FSM.h"
+#include "main.h"
 
 
 extern I2C_HandleTypeDef hi2c1;
@@ -18,11 +20,14 @@ float acc_raw[3] = {0};
 float gyro_raw[3] = {0};
 float acc_mg[3] = {0};
 float gyro_dps[3] = {0};
-float angle = 0;
+double angle = 0;
 
 static bool filt_init = false;
 static float gz_filt = 0.0f;
-float gyro_bias = -4.03166771;
+float gyro_bias;
+float gz = 0;
+float offset_find;
+ uint32_t offset_cout = 0;
 
 static uint32_t last_ms = 0;
 
@@ -86,22 +91,42 @@ float LSM6DS3_ReadGyro(void)
     gyro_dps[0] = gyro_raw[0] * 0.00875f;
     gyro_dps[1] = gyro_raw[1] * 0.00875f;
     gyro_dps[2] = gyro_raw[2] * 0.00875f;
-
     return gyro_dps[2];
 }
 
 float Gyro_ReadYawDps(){
-	float gz = LSM6DS3_ReadGyro() - gyro_bias;
+	gz = LSM6DS3_ReadGyro();
 	if (!filt_init) {
+		gz = 0;
 		gz_filt = gz;
 		filt_init = true;
 		return gz_filt;
 	}
-
+	else{
+		gz -= gyro_bias;
 	const float alpha = 0.15f;
     gz_filt = (1.0f - alpha)*gz_filt + alpha*gz;
-    return gz_filt;            // dps đã lọc
+    return gz_filt;
+	}// dps đã lọc
 }
+
+float Gyro_GetOffset()
+{
+	gz = LSM6DS3_ReadGyro();
+	if (!filt_init) {
+		gz = 0;
+		gz_filt = gz;
+		filt_init = true;
+		return gz_filt;
+	}
+	else{
+		gz -= gyro_bias;
+	const float alpha = 0.15f;
+    gz_filt = (1.0f - alpha)*gz_filt + alpha*gz;
+    return gz_filt;
+	}// dps đã lọc
+}
+
 void Gyro_UpdateAngle(){
     uint32_t now = HAL_GetTick();
     float dt = (last_ms==0) ? 0.05f : (now - last_ms)/1000.0f;
@@ -114,6 +139,29 @@ void Gyro_UpdateAngle(){
 
     last_ms = now;
 }
-;
+void Gyro_ResetAngle(void)
+{
+    angle    = 0.0;
+    gz_filt  = 0.0f;      // xóa trạng thái bộ lọc
+    filt_init = false;    // buộc init lại filter cho mẫu đầu
+    last_ms  = HAL_GetTick();
+}
+bool Gyro_Calibrate()
+{
+	if(offset_cout < 700)
+	    {
+	    offset_find += LSM6DS3_ReadGyro();
+	    offset_cout ++;
+	    return false;
+	    }
+	    else if(offset_cout == 700)
+	    {
+	    	gyro_bias = offset_find / offset_cout;
+	    	offset_cout = 0;
+	    	offset_find = 0;
+	    	return true;
+	    }
+}
+
 
 

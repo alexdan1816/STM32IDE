@@ -16,9 +16,14 @@ float alpha = 0.2f;
 volatile uint16_t LEFT_IR = 0, FLEFT_IR = 0, FRIGHT_IR = 0, RIGHT_IR = 0;
 volatile IR_status ir_status = OKAY;
 
+volatile bool start = false;
+
+uint32_t ir_count = 0;
 
 void EmiterON()
 {
+    ir_count += 1;
+
 	HAL_GPIO_WritePin(LEFT_IR_EMIT_GPIO_Port, LEFT_IR_EMIT_Pin, SET);
 	HAL_GPIO_WritePin(FLEFT_IR_EMIT_GPIO_Port, FLEFT_IR_EMIT_Pin, SET);
 	HAL_GPIO_WritePin(FRIGHT_IR_EMIT_GPIO_Port, FRIGHT_IR_EMIT_Pin, SET);
@@ -59,24 +64,54 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
     FLEFT_IR = raw_FL;
     FRIGHT_IR= raw_FR;
     RIGHT_IR = raw_R;
-
-    HAL_ADC_Stop_DMA(hadc);
-    EmiterOFF();
     ir_status = OKAY;
+    HAL_ADC_Stop_DMA(hadc);
+    if(cur_phase == SENSOR_PHR)
+    {
+    EmiterOFF();
     cur_phase = UPDATE_PHR;
+    return;
+
+	}
+    else if( cur_phase == BEGIN_PHR)
+    {
+    	HAL_GPIO_WritePin(LEFT_IR_EMIT_GPIO_Port, LEFT_IR_EMIT_Pin, RESET);
+    	if(LEFT_IR > 1500)
+    	{
+    		start = true;
+    		return;
+    	}
+    	else
+    	{
+    		start = false;
+    		return;
+    	}
+
+    }
 }
 
 void ReadIR(ADC_HandleTypeDef* hadc)
 {
-    if (ir_status == OKAY && cur_phase == SENSOR_PHR) {
-        ir_status = BUSY;
-
-        // Bật emitter nếu bạn đo chủ động loại bỏ nền (tùy chiến lược)
-        EmiterON();
-        // delay ngắn nếu LED cần ổn định (ví dụ vài trăm µs) — tránh HAL_Delay trong ISR
-
-        HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
-    }
+	if( cur_phase == SENSOR_PHR)
+	{
+		if (ir_status == OKAY )
+		{
+			ir_status = BUSY;
+			// Bật emitter nếu bạn đo chủ động loại bỏ nền (tùy chiến lược)
+			EmiterON();
+			// delay ngắn nếu LED cần ổn định (ví dụ vài trăm µs) — tránh HAL_Delay trong ISR
+			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
+		}
+	}
+	else if(cur_phase == BEGIN_PHR)
+	{
+		if(ir_status == OKAY)
+		{
+			ir_status = BUSY;
+			HAL_GPIO_WritePin(LEFT_IR_EMIT_GPIO_Port, LEFT_IR_EMIT_Pin, SET);
+			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
+		}
+	}
 }
 
 bool Wall_Left()
@@ -90,6 +125,12 @@ bool Wall_Right()
 bool Wall_Front()
 {
 	return (FRIGHT_IR >700 && FLEFT_IR > 700);
+}
+
+bool Check_Start(ADC_HandleTypeDef* hadc)
+{
+	ReadIR(hadc);
+	return start;
 }
 
 

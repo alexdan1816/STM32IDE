@@ -16,6 +16,17 @@
 #define MM 0.1874f // Chang from pulse to mm
 #define DT 0.05f // DELTA time
 #define RADIUS 17 // PIVOT
+#define SAMPLE_T 2 // SAMPLE TIME USE FOR VELOCITY CACULATOR
+
+#define PULSE_TO_DEG 0.23
+#define TURN_TOLERANCE 12
+#define TURN_DEG 105
+
+#define ENCODER_PPR 570     // pulses per revolution
+
+
+
+extern uint32_t prevtime;
 
 typedef enum
 {
@@ -35,7 +46,8 @@ typedef enum
 	MOVE,
 	TURN_LEFT,
 	TURN_RIGHT,
-	TURN_BACK
+	TURN_BACK,
+	COOL_DOWN
 }State;
 
 typedef struct
@@ -70,6 +82,7 @@ typedef struct
     int16_t encoder_count;
     int16_t prev_count;
     int16_t delta_count;
+    int16_t progress_count;
 
     // PID
     float kp;
@@ -92,36 +105,13 @@ typedef struct
 
 } Motor;
 
-// Debug
 
-extern uint16_t count;
-extern uint16_t countR;
-extern uint16_t countL;
-extern uint32_t SAMPLE_T;
+
+extern double encoder_progress;
+extern double encoder_output;
+extern double encoder_target;
 
 extern State cur_state;
-extern bool already;
-extern bool time_out;
-
-extern volatile int16_t encoder_prev_R ;
-extern volatile int16_t encoder_prev_L ;
-extern volatile int16_t encoder_now_R;
-extern volatile int16_t encoder_now_L;
-extern volatile int16_t prog_R ;
-extern volatile int16_t prog_L ;
-
-extern float s_require;
-extern float s_remain;
-
-extern float angle_require;
-extern float angle_remain;
-
-extern float v_stop;
-extern float v_max;
-extern float v_next;
-
-extern float a_up ;
-extern float a_down ;
 
 
 
@@ -150,11 +140,13 @@ void Stabilize(Motor *right, Motor *left);
 
 
 void Move_forward(Motor *_motorL, Motor *_motorR);
-void Move_backwar(Motor *_motorL, Motor *_motorR);
+void Move_backward(Motor *_motorL, Motor *_motorR);
 void Move_Left(Motor *_motorL, Motor *_motorR);
 void Move_Right(Motor *_motorL, Motor *_motorR);
-
 void Move_Left_enhanced(Motor *_motorL, Motor*_motorR, float accelerate);
+
+void TurnLeft_StartByPulses(Motor *left, Motor *right, uint16_t pulses, double speed_rpm);
+
 
 
 #endif /* MOTOR_H_ */

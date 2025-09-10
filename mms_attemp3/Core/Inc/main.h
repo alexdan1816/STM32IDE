@@ -101,8 +101,8 @@ void Error_Handler(void);
 #define FLEFT_IR_EMIT_GPIO_Port GPIOB
 #define LEFT_IR_EMIT_Pin GPIO_PIN_5
 #define LEFT_IR_EMIT_GPIO_Port GPIOB
-#define LEFT_C1_Pin GPIO_PIN_6
-#define LEFT_C1_GPIO_Port GPIOB
+#define LFFT_C1_Pin GPIO_PIN_6
+#define LFFT_C1_GPIO_Port GPIOB
 #define LEFT_C2_Pin GPIO_PIN_7
 #define LEFT_C2_GPIO_Port GPIOB
 

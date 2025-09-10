@@ -65,8 +65,8 @@ void MazeFloodFill(Maze *maze, Cell_Queue*cellstack, MousePose *mousepose); // F
 bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack);
 bool LegalCell(int8_t curX ,int8_t curY, int8_t nextX, int8_t nextY, Maze *maze);
 
-void PoseInit(MousePose *mousepose);
-void PoseUpdate(MousePose *mousepose, Direction curren_head, Action_type act);
+void PoseInit(MousePose *mousepose, Direction start_dir, int8_t start_x, int8_t start_y);
+void PoseUpdate(MousePose *mousepose, Action_type act);
 
 void CellQueueInitialize(Cell_Queue*cellqueue);
 bool CellqueueEmpty(Cell_Queue*cellqueue);

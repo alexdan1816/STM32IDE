@@ -9,6 +9,7 @@
 #include "IR.h"
 #include "FSM.h"
 #include "FLOODFILL.h"
+#include "motor.h"
 
 
 void MazeInitialize(Maze *maze)
@@ -67,6 +68,7 @@ void MazeUpdate(Maze *maze, MousePose *currentPose)
 		}
 	}
 }
+
 void MazeFloodFill(Maze *maze, Cell_Queue*q, MousePose *mousepose)
 {
 	if(cur_phase == ALGORITHM1_PHR)
@@ -313,8 +315,95 @@ bool LegalCell(int8_t curX ,int8_t curY, int8_t nextX, int8_t nextY, Maze *maze)
 	}
 	else return false;
 }
-void PoseInit(MousePose *mousepose);
-void PoseUpdate(MousePose *mousepose, Direction curren_head, Action_type act);
+
+
+void PoseInit(MousePose *mousepose, Direction start_dir, int8_t start_x, int8_t start_y)
+{
+	mousepose->head = start_dir;
+	mousepose->x = start_x;
+	mousepose->y = start_y;
+	return;
+}
+void PoseUpdate(MousePose *mousepose, Action_type act)
+{
+	switch (act) {
+	case MOVE_ACT:
+		switch (mousepose->head) {
+		case NORTH:
+			mousepose->y += 1;
+			break;
+		case SOUTH:
+			mousepose->y -= 1;
+			break;
+		case EAST:
+			mousepose->x += 1;
+			break;
+		case WEST:
+			mousepose->x -= 1;
+			break;
+		default:
+			break;
+		}
+		break;
+	case TURN_LEFT_ACT:
+		switch (mousepose->head) {
+		case NORTH:
+			mousepose->head = WEST;
+			break;
+		case SOUTH:
+			mousepose->head = EAST;
+			break;
+		case EAST:
+			mousepose->head = NORTH;
+			break;
+		case WEST:
+			mousepose->head = SOUTH;
+			break;
+		default:
+			break;
+		}
+		break;
+	case TURN_RIGHT_ACT:
+		switch (mousepose->head) {
+		case NORTH:
+			mousepose->head = EAST;
+			break;
+		case SOUTH:
+			mousepose->head = WEST;
+			break;
+		case EAST:
+			mousepose->head = SOUTH;
+			break;
+		case WEST:
+			mousepose->head = NORTH;
+			break;
+		default:
+			break;
+		}
+		break;
+	case TURN_BACK_ACT:
+		switch (mousepose->head) {
+		case NORTH:
+			mousepose->head = SOUTH;
+			break;
+		case SOUTH:
+			mousepose->head = NORTH;
+			break;
+		case EAST:
+			mousepose->head = WEST;
+			break;
+		case WEST:
+			mousepose->head = EAST;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+	return;
+}
 
 void CellQueueInitialize(Cell_Queue*cellqueue)
 {
@@ -353,5 +442,32 @@ void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y)
 
 void ExecuteAct(Action_Stack *s)
 {
-
+	if(cur_phase == EXECUTE_PHR)
+	{
+		if(Action_Stack_Empy(s))
+		{
+			cur_phase = SENSOR_PHR;
+			return;
+		}
+		else
+		{
+			Action_type a = Pop_act(s);
+			switch (a) {
+				case MOVE_ACT:
+					cur_state  = MOVE;
+					break;
+				case TURN_LEFT_ACT:
+					cur_state = TURN_LEFT;
+					break;
+				case TURN_RIGHT_ACT:
+					cur_state = TURN_RIGHT;
+					break;
+				case TURN_BACK_ACT:
+					cur_state = TURN_BACK;
+					break;
+				default:
+					break;
+			}
+		}
+	}
 }

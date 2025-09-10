@@ -18,6 +18,8 @@
 
 typedef enum
 {
+	BEGIN_PHR,
+	GYRO_PHR,
 	SENSOR_PHR,
 	UPDATE_PHR,
 	FINDPATH_PHR,
@@ -43,15 +45,16 @@ typedef struct
 }Action_Stack;
 
 
-extern Action_Stack action;
+//extern Action_Stack action;
 extern Phase cur_phase;
 
+void Action_Stack_Init(Action_Stack *a);
 
 bool Action_Stack_Empy(Action_Stack *a);
 bool Action_Stack_Full(Action_Stack *a);
 
 void Push_act(Action_Stack *a, Action_type act);
-Action_type Execute_act(Action_Stack *a);
+Action_type Pop_act(Action_Stack *a);
 
 
 

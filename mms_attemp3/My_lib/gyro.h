@@ -8,6 +8,7 @@
 #ifndef GYRO_H_
 #define GYRO_H_
 
+#include "stdbool.h"
 // Địa chỉ
 #define LSM6DS3_ADDR   (0x6B << 1)
 
@@ -19,14 +20,12 @@
 #define REG_OUTX_L_G   0x22
 #define REG_OUTX_L_XL  0x28
 
-#define OFFSET 4
-
 extern uint8_t whoami;
 extern float acc_raw[3];
 extern float gyro_raw[3];
 extern float acc_mg[3];
 extern float gyro_dps[3];
-extern float angle;
+extern double angle;
 
 extern float gyro_bias;
 
@@ -47,5 +46,9 @@ float LSM6DS3_ReadGyro(void);
 float Gyro_ReadYawDps();
 
 void Gyro_UpdateAngle();
+
+void Gyro_ResetAngle(void);
+
+bool Gyro_Calibrate();
 
 #endif /* GYRO_H_ */

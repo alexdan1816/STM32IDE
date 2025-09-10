@@ -10,8 +10,19 @@
 #include "main.h"
 #include "stdlib.h"
 
+
 Phase cur_phase = SENSOR_PHR;
-Action_Stack action;
+
+void Action_Stack_Init(Action_Stack *a)
+{
+	for (int i = 0; i < ACTQ_MAX;  i ++)
+	{
+		a->action[i] = NONE_ACT;
+	}
+	a->top = -1;
+	return;
+}
+
 
 bool Action_Stack_Empy(Action_Stack *a)
 {
@@ -33,7 +44,7 @@ void Push_act(Action_Stack *a, Action_type act)
 	else
 		return;
 }
-Action_type Execute_act(Action_Stack *a)
+Action_type Pop_act(Action_Stack *a)
 {
 	if(!Action_Stack_Empy(a))
 	{

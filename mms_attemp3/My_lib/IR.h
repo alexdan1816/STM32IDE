@@ -19,7 +19,7 @@ typedef enum { OKAY, BUSY } IR_status;
 extern volatile uint16_t LEFT_IR, FLEFT_IR, FRIGHT_IR, RIGHT_IR;
 extern volatile IR_status ir_status;
 extern uint16_t sensor_data[IR_BUF_LEN];
-
+extern uint32_t ir_count ;
 
 void EmiterON(void);
 void EmiterOFF(void);
@@ -29,6 +29,7 @@ void ReadIR(ADC_HandleTypeDef* hadc);
 bool Wall_Left(void);
 bool Wall_Right(void);
 bool Wall_Front(void);
+bool Check_Start(ADC_HandleTypeDef* hadc);
 
 
 

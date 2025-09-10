@@ -27,21 +27,20 @@
 #include <IR.h>
 #include <stdbool.h>
 #include <FSM.h>
+#include <FLOODFILL.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 PID_TypeDef RPID;
 PID_TypeDef LPID;
-PID_TypeDef RGPID;
-PID_TypeDef LGPID;
-PID_TypeDef REPID;
-PID_TypeDef LRPID;
+PID_TypeDef TURNPID;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define N_PULSES 350
 
 /* USER CODE END PD */
 
@@ -67,15 +66,38 @@ Motor *pLeft = &Left_motor;
 Motor Right_motor;
 Motor *pRight = &Right_motor;
 
-uint16_t gyro_bias_count = 0;
-float gyro_off_set = 0;
-uint32_t prevtime = 0;
-uint32_t velocity_count = 0;
-
 
 volatile bool tick_start;
-volatile bool tick_2ms = false;
-volatile bool tick_50ms = false;
+
+//-----MAZE VARIABLE------
+
+Maze _MyMaze;
+Maze *toMyMaze = &_MyMaze;
+
+//-----MousePose profile
+
+MousePose _MyMousePose;
+MousePose *toMyMousePose = &_MyMousePose;
+
+//-----Cell queue used for floodfilling
+
+Cell_Queue _MyCellQueue;
+Cell_Queue *toMyCellQueue = &_MyCellQueue;
+
+//-----Action Stack used for execute action
+
+Action_Stack _MyActionStack;
+Action_Stack *toMyActionStack = &_MyActionStack;
+
+//-----LOW LEVEL FSM STATE
+
+/*extern State cur_state = IDLE;*/ //declared in motor.h and motor.c
+
+//-----HIGH LEVEL FSM STATE
+
+/*extern Phase cur_phase = SENSOR_PHR;*/ //declared in FSM.H and FSM.c
+
+
 
 /* USER CODE END PV */
 
@@ -137,7 +159,7 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  //Motor
+  //Motor Initialization
   Motor_Init(&Right_motor, RIGHT,
 		  	 AIN1_GPIO_Port, AIN1_Pin, AIN2_GPIO_Port, AIN2_Pin,
 			 &htim2, TIM_CHANNEL_2, &htim3, 0.3, 1.9, 0.003);
@@ -151,6 +173,8 @@ int main(void)
   __HAL_TIM_SET_COUNTER(&htim3, 0);
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
   __HAL_TIM_SET_COUNTER(&htim4, 0);
+
+
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   PID(&RPID,
@@ -173,13 +197,36 @@ int main(void)
   PID_SetSampleTime(&LPID, 50);
   PID_SetOutputLimits(&LPID, -499, 499);
 
+  PID(&TURNPID,&encoder_progress, &encoder_output, &encoder_target, 0.45,0.15,0.1,_PID_P_ON_E,_PID_CD_DIRECT);
+  PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
+  PID_SetSampleTime(&TURNPID, 1);
+  PID_SetOutputLimits(&TURNPID, -90, 90);
 
+
+  // State initialization
+  cur_phase = BEGIN_PHR;
   cur_state = IDLE;
-  //gyro
+
+
+  // Gyro initialization
   LSM6DS3_Init();
-  //IR
+
+
+  // IR initialization
   HAL_ADCEx_Calibration_Start(&hadc1);
   ir_status = OKAY;
+
+  // Maze initialization
+  MazeInitialize(toMyMaze);
+
+  // Mouse Pose init
+  PoseInit(toMyMousePose, NORTH, Xstart, Ystart);
+
+  // Action stack init
+  Action_Stack_Init(toMyActionStack);
+
+  // Cell queue init
+  CellQueueInitialize(toMyCellQueue);
 
 
   //khởi tạo maze
@@ -197,82 +244,159 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(tick_start)  // tick 50ms
+	  if(tick_start)  // tick 1ms
 	  {
 		  tick_start = false;
-
-		  // luôn update low-level
-		  Gyro_UpdateAngle();
-		  Motor_GetSpeed(&Left_motor);
-		  Motor_GetSpeed(&Right_motor);
-		  PID_Compute(&LPID);
-		  PID_Compute(&RPID);
-		  Motor_SetPwm(&Left_motor);
-		  Motor_SetPwm(&Right_motor);
-
-//		   switch(cur_phase) {
-//		        case SENSOR_PHR:
-//		            // Đọc IR khi đứng giữa ô
-//		            ReadIR(&hadc1);
-//		            break;
-//
-//		        case UPDATE_PHR:
-//		            // Cập nhật maze từ dữ liệu sensor
-//		            MazeUpdate(&maze, &currentpose);
-//		            break;
-//
-//		        case FINDPATH_PHR:
-//		            if (FindNextCell(&maze, &currentpose, &action)) {
-//		                cur_phase = EXECUTE_PHR;
-//		            } else {
-//		                cur_phase = ALGORITHM1_PHR;
-//		            }
-//		            break;
-//
-//		        case ALGORITHM1_PHR:
-//
-//		        case ALGORITHM2_PHR:
-//		            MazeFloodFill(&maze, &cellqueue, &currentpose);
-//		            break;
-//
-//		        case EXECUTE_PHR: {
-//		            Action_type act = Execute_act(&action);
-//		            if (act == NONE_ACT) {
-//		                cur_phase = COMPLETE_PHR;
-//		            } else {
-//		                // Thực thi hành động
-//		                switch (act) {
-//		                    case MOVE_ACT:      Move_forward(pLeft, pRight); break;
-//		                    case TURN_LEFT_ACT: Move_Left(pLeft, pRight);    break;
-//		                    case TURN_RIGHT_ACT:Move_Right(pLeft, pRight);   break;
-//		                    case TURN_BACK_ACT: Move_Backward(pLeft, pRight);break;
-//		                    default: break;
-//		                }
-//		                // Cập nhật pose sau khi hành động
-//		                PoseUpdate(&currentpose, currentpose.head, act);
-//		                cur_phase = SENSOR_PHR; // quay lại đọc sensor
-//		            }
-//		            break;
-//		        }
-//
-//		        case COMPLETE_PHR:
-//		            // Đã xong maze
-//		            Motor_SetTarget(pLeft, 0);
-//		            Motor_SetTarget(pRight, 0);
-//		            break;
-//
-//		        default:
-//		            break;
-//		    }
-//		  if(HAL_GetTick() - prevtime >3000 && time_out == false)
-//		  {
-//			  time_out = true;
-//			  prevtime = HAL_GetTick();
-//		  }
-//		  Move_forward(pLeft, pRight);
-//		  cur_phase = SENSOR_PHR;
+//		  cur_state = SENSOR_PHR;
 //		  ReadIR(&hadc1);
 //		  HAL_Delay(100);
+		  Motor_GetSpeed(&Left_motor);
+		  Motor_GetSpeed(&Right_motor);
+
+		  switch (cur_phase) {
+		  	case BEGIN_PHR:
+		  		if(Check_Start(&hadc1)) cur_phase = GYRO_PHR;
+		  		break;
+		  	case GYRO_PHR:
+		  		if(Gyro_Calibrate())
+		  		{
+		  			cur_phase = SENSOR_PHR;
+		  			break;
+		  		}
+		  		else
+		  		{
+		  			cur_phase = GYRO_PHR;
+		  			break;
+		  		}
+			case SENSOR_PHR:
+				ReadIR(&hadc1);
+				break;
+			case UPDATE_PHR:
+				MazeUpdate(toMyMaze, toMyMousePose);
+				break;
+			case FINDPATH_PHR:
+				if(FindNextCell(toMyMaze, toMyMousePose, toMyActionStack))
+				{
+					cur_phase = EXECUTE_PHR;
+					break;
+				}
+				else
+				{
+					cur_phase = ALGORITHM1_PHR;
+					break;
+				}
+			case ALGORITHM1_PHR:
+				MazeFloodFill(toMyMaze, toMyCellQueue, toMyMousePose);
+				break;
+			case ALGORITHM2_PHR:
+				MazeFloodFill(toMyMaze, toMyCellQueue, toMyMousePose);
+				break;
+			case EXECUTE_PHR:
+				switch (cur_state) {
+					case IDLE:
+						ExecuteAct(toMyActionStack);
+						break;
+					case TURN_LEFT:
+						Move_Left(pLeft, pRight);
+						PID_Compute(&TURNPID);
+						if(cur_state == COOL_DOWN)
+						{
+							prevtime = HAL_GetTick();
+							PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
+							pLeft->Pid_output = pRight->Pid_output = 0;
+						}
+						break;
+					case TURN_RIGHT:
+						Move_Right(pLeft, pRight);
+						PID_Compute(&TURNPID);
+						if(cur_state == COOL_DOWN)
+						{
+							prevtime = HAL_GetTick();
+							PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
+							pLeft->Pid_output = pRight->Pid_output = 0;
+						}
+						break;
+					case MOVE:
+						Move_forward(pLeft, pRight);
+						PID_Compute(&RPID);
+						PID_Compute(&LPID);
+						if(cur_state == COOL_DOWN)
+						{
+							prevtime = HAL_GetTick();
+							PID_SetMode(&RPID, _PID_MODE_MANUAL);
+							PID_SetMode(&LPID, _PID_MODE_MANUAL);
+						}
+						break;
+					case TURN_BACK:
+						Move_backward(pLeft, pRight);
+						PID_Compute(&TURNPID);
+						if(cur_state == COOL_DOWN)
+						{
+							prevtime = HAL_GetTick();
+							PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
+							pLeft->Pid_output = pRight->Pid_output = 0;
+						}
+						break;
+					case COOL_DOWN:
+
+					default:
+						break;
+				}
+				break;
+			default:
+				break;
+		}
+
+//		  switch (cur_state) {
+//			case IDLE:
+//				if(turn == 0)
+//				{
+//					Move_Left(pLeft, pRight);
+//				}
+//				else if(turn == 1)
+//				{
+//					Move_forward(pLeft, &Right_motor);
+//				}
+//				break;
+//			case TURN_LEFT:
+//				Move_Left(pLeft, pRight);
+//				PID_Compute(&TURNPID);
+//				if(cur_state == COOL_DOWN)
+//					{
+//					turn = 1;
+//					prevtime = HAL_GetTick();
+//					PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
+//					pLeft->Pid_output = pRight->Pid_output = 0;
+//					}
+//				break;
+//			case MOVE:
+//				Move_forward(pLeft, pRight);
+//				PID_Compute(&RPID);
+//				PID_Compute(&LPID);
+//				if(cur_state == COOL_DOWN)
+//					{
+//					turn = 0;
+//					prevtime = HAL_GetTick();
+//					PID_SetMode(&RPID, _PID_MODE_MANUAL);
+//					PID_SetMode(&LPID, _PID_MODE_MANUAL);
+//					}
+//				break;
+//			case COOL_DOWN:
+//				if(HAL_GetTick() - prevtime > 1000)
+//				{
+//					PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
+//					PID_SetMode(&RPID,_PID_MODE_AUTOMATIC);
+//					PID_SetMode(&LPID,_PID_MODE_AUTOMATIC);
+//					cur_state = IDLE;
+//					prevtime = HAL_GetTick();
+//				}
+//				break;
+//			default:
+//				break;
+//		}
+//		  		  Motor_SetPwm(&Left_motor);
+//		  		  Motor_SetPwm(&Right_motor);
+
 	  }
   }
   /* USER CODE END 3 */
@@ -453,7 +577,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 71;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 49999;
+  htim1.Init.Period = 999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -575,7 +699,18 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
+  TIM_OC_InitTypeDef sOC = {0};
+  sOC.OCMode     = TIM_OCMODE_ACTIVE;   // hoặc TOGGLE đều được, vì ta chỉ cần ngắt
+  sOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sOC.Pulse      = 0;                   // sẽ set khi bắt đầu quay
 
+  if (HAL_TIM_OC_ConfigChannel(&htim3, &sOC, TIM_CHANNEL_3) != HAL_OK) {
+      Error_Handler();
+  }
+
+  // Bật NVIC cho TIM3 (nếu CubeMX chưa bật)
+  HAL_NVIC_SetPriority(TIM3_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(TIM3_IRQn);
   /* USER CODE END TIM3_Init 2 */
 
 }
@@ -712,6 +847,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       tick_start = true;
     }
 }
+
+
+
 /* USER CODE END 4 */
 
 /**
