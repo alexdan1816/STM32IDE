@@ -149,18 +149,19 @@ void Gyro_ResetAngle(void)
 bool Gyro_Calibrate()
 {
 	if(offset_cout < 700)
-	    {
-	    offset_find += LSM6DS3_ReadGyro();
+	{
+		offset_find += LSM6DS3_ReadGyro();
 	    offset_cout ++;
 	    return false;
-	    }
-	    else if(offset_cout == 700)
-	    {
-	    	gyro_bias = offset_find / offset_cout;
-	    	offset_cout = 0;
-	    	offset_find = 0;
-	    	return true;
-	    }
+	}
+	else if(offset_cout == 700)
+	{
+		gyro_bias = offset_find / offset_cout;
+		offset_cout = 0;
+		offset_find = 0;
+		return true;
+	}
+	return false;
 }
 
 

@@ -309,3 +309,10 @@ double PID_GetKd(PID_TypeDef *uPID)
 {
 	return uPID->DispKd;
 }
+
+void Pid_Reset(PID_TypeDef *pid)
+{
+	pid->OutputSum = 0;
+	pid->LastInput = 0;
+	*(pid->MyOutput) = 0;
+}

@@ -124,7 +124,7 @@ bool Wall_Right()
 }
 bool Wall_Front()
 {
-	return (FRIGHT_IR >700 && FLEFT_IR > 700);
+	return (FRIGHT_IR >700 || FLEFT_IR > 700);
 }
 
 bool Check_Start(ADC_HandleTypeDef* hadc)

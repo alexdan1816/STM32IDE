@@ -57,6 +57,7 @@ typedef struct
 // map hướng -> vector dịch chuyển 1 ô
 extern const int8_t dx[4];
 extern const int8_t dy[4];
+extern uint32_t check_count_ff;
 
 
 void MazeInitialize(Maze *maze);

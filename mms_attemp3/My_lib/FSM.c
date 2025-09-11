@@ -11,7 +11,7 @@
 #include "stdlib.h"
 
 
-Phase cur_phase = SENSOR_PHR;
+volatile Phase cur_phase = SENSOR_PHR;
 
 void Action_Stack_Init(Action_Stack *a)
 {
@@ -37,19 +37,21 @@ void Push_act(Action_Stack *a, Action_type act)
 {
 	if(!Action_Stack_Full(a))
 	{
-		a->top ++;
+		a->top += 1;
 		a->action[a->top] = act;
 		return;
 	}
-	else
+	else if(Action_Stack_Full(a))
 		return;
 }
 Action_type Pop_act(Action_Stack *a)
 {
 	if(!Action_Stack_Empy(a))
 	{
-		a->top --;
-		return a->action[a->top + 1];
+		Action_type act = a->action[a->top];
+		a->action[a->top] = NONE_ACT;
+		a->top -=1;
+		return act;
 	}
 	else
 		return NONE_ACT;

@@ -68,7 +68,7 @@ Motor *pRight = &Right_motor;
 
 
 volatile bool tick_start;
-
+ uint32_t check_count;
 //-----MAZE VARIABLE------
 
 Maze _MyMaze;
@@ -184,7 +184,7 @@ int main(void)
 	  pRight->kp, pRight->ki, pRight->kd,
 	  _PID_P_ON_E, _PID_CD_DIRECT);
   PID_SetMode(&RPID, _PID_MODE_AUTOMATIC);
-  PID_SetSampleTime(&RPID, 50);
+  PID_SetSampleTime(&RPID, 2);
   PID_SetOutputLimits(&RPID, -499, 499);
 
   PID(&LPID,
@@ -194,7 +194,7 @@ int main(void)
 	  pLeft->kp, pLeft->ki, pLeft->kd,
 	  _PID_P_ON_E, _PID_CD_DIRECT);
   PID_SetMode(&LPID, _PID_MODE_AUTOMATIC);
-  PID_SetSampleTime(&LPID, 50);
+  PID_SetSampleTime(&LPID, 2);
   PID_SetOutputLimits(&LPID, -499, 499);
 
   PID(&TURNPID,&encoder_progress, &encoder_output, &encoder_target, 0.45,0.15,0.1,_PID_P_ON_E,_PID_CD_DIRECT);
@@ -206,6 +206,7 @@ int main(void)
   // State initialization
   cur_phase = BEGIN_PHR;
   cur_state = IDLE;
+  check_count = 0;
 
 
   // Gyro initialization
@@ -275,6 +276,7 @@ int main(void)
 				MazeUpdate(toMyMaze, toMyMousePose);
 				break;
 			case FINDPATH_PHR:
+
 				if(FindNextCell(toMyMaze, toMyMousePose, toMyActionStack))
 				{
 					cur_phase = EXECUTE_PHR;
@@ -298,34 +300,49 @@ int main(void)
 						break;
 					case TURN_LEFT:
 						Move_Left(pLeft, pRight);
+						if(cur_state == TURN_LEFT)
+						{
 						PID_Compute(&TURNPID);
+						}
 						if(cur_state == COOL_DOWN)
 						{
 							prevtime = HAL_GetTick();
 							PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
-							pLeft->Pid_output = pRight->Pid_output = 0;
 						}
+						Motor_SetPwm(&Left_motor);
+						Motor_SetPwm(&Right_motor);
 						break;
 					case TURN_RIGHT:
 						Move_Right(pLeft, pRight);
+						if(cur_state == TURN_LEFT)
+						{
 						PID_Compute(&TURNPID);
+						}
 						if(cur_state == COOL_DOWN)
 						{
 							prevtime = HAL_GetTick();
 							PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
-							pLeft->Pid_output = pRight->Pid_output = 0;
 						}
+						Motor_SetPwm(&Left_motor);
+						Motor_SetPwm(&Right_motor);
 						break;
 					case MOVE:
 						Move_forward(pLeft, pRight);
+						if(cur_state == MOVE)
+						{
 						PID_Compute(&RPID);
 						PID_Compute(&LPID);
+						}
 						if(cur_state == COOL_DOWN)
 						{
 							prevtime = HAL_GetTick();
 							PID_SetMode(&RPID, _PID_MODE_MANUAL);
 							PID_SetMode(&LPID, _PID_MODE_MANUAL);
+//							PID_Compute(&RPID);
+//							PID_Compute(&LPID);
 						}
+						Motor_SetPwm(&Left_motor);
+						Motor_SetPwm(&Right_motor);
 						break;
 					case TURN_BACK:
 						Move_backward(pLeft, pRight);
@@ -334,18 +351,23 @@ int main(void)
 						{
 							prevtime = HAL_GetTick();
 							PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
-							pLeft->Pid_output = pRight->Pid_output = 0;
 						}
+						Motor_SetPwm(&Left_motor);
+						Motor_SetPwm(&Right_motor);
 						break;
 					case COOL_DOWN:
-						if(HAL_GetTick() - prevtime > 1000)
+						if(Right_motor.Pid_output != 0 && Left_motor.Pid_output !=0 )
+						{
+							cur_phase = ABANDONE_PHR;
+							break;
+						}
+						else if(HAL_GetTick() - prevtime > 1000)
 						{
 							PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
 							PID_SetMode(&RPID,_PID_MODE_AUTOMATIC);
 							PID_SetMode(&LPID,_PID_MODE_AUTOMATIC);
 							cur_state = IDLE;
 							prevtime = HAL_GetTick();
-							cur_phase = EXECUTE_PHR;
 						}
 					default:
 						break;
@@ -355,55 +377,6 @@ int main(void)
 				break;
 		}
 
-//		  switch (cur_state) {
-//			case IDLE:
-//				if(turn == 0)
-//				{
-//					Move_Left(pLeft, pRight);
-//				}
-//				else if(turn == 1)
-//				{
-//					Move_forward(pLeft, &Right_motor);
-//				}
-//				break;
-//			case TURN_LEFT:
-//				Move_Left(pLeft, pRight);
-//				PID_Compute(&TURNPID);
-//				if(cur_state == COOL_DOWN)
-//					{
-//					turn = 1;
-//					prevtime = HAL_GetTick();
-//					PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
-//					pLeft->Pid_output = pRight->Pid_output = 0;
-//					}
-//				break;
-//			case MOVE:
-//				Move_forward(pLeft, pRight);
-//				PID_Compute(&RPID);
-//				PID_Compute(&LPID);
-//				if(cur_state == COOL_DOWN)
-//					{
-//					turn = 0;
-//					prevtime = HAL_GetTick();
-//					PID_SetMode(&RPID, _PID_MODE_MANUAL);
-//					PID_SetMode(&LPID, _PID_MODE_MANUAL);
-//					}
-//				break;
-//			case COOL_DOWN:
-//				if(HAL_GetTick() - prevtime > 1000)
-//				{
-//					PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
-//					PID_SetMode(&RPID,_PID_MODE_AUTOMATIC);
-//					PID_SetMode(&LPID,_PID_MODE_AUTOMATIC);
-//					cur_state = IDLE;
-//					prevtime = HAL_GetTick();
-//				}
-//				break;
-//			default:
-//				break;
-//		}
-		  		  Motor_SetPwm(&Left_motor);
-		  		  Motor_SetPwm(&Right_motor);
 
 	  }
   }

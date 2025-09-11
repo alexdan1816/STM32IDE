@@ -11,6 +11,7 @@
 #include "FLOODFILL.h"
 #include "motor.h"
 
+uint32_t check_count_ff = 0;
 
 void MazeInitialize(Maze *maze)
 {
@@ -446,6 +447,7 @@ void ExecuteAct(Action_Stack *s)
 	{
 		if(Action_Stack_Empy(s))
 		{
+			check_count_ff++;
 			cur_phase = SENSOR_PHR;
 			return;
 		}
