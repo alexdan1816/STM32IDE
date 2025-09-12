@@ -26,11 +26,13 @@ void Action_Stack_Init(Action_Stack *a)
 
 bool Action_Stack_Empy(Action_Stack *a)
 {
-	return a->top == -1;
+	if(a->top == -1) 	return true;
+	else 				return false;
 }
 bool Action_Stack_Full(Action_Stack *a)
 {
-	return a->top == ACTQ_MAX - 1;
+	if(a->top == ACTQ_MAX - 1) 	return true;
+	else						return false;
 }
 
 void Push_act(Action_Stack *a, Action_type act)
@@ -48,10 +50,8 @@ Action_type Pop_act(Action_Stack *a)
 {
 	if(!Action_Stack_Empy(a))
 	{
-		Action_type act = a->action[a->top];
-		a->action[a->top] = NONE_ACT;
 		a->top -=1;
-		return act;
+		return a->action[a->top + 1];
 	}
 	else
 		return NONE_ACT;

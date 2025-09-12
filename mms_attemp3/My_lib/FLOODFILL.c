@@ -441,7 +441,7 @@ void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y)
 	return;
 }
 
-void ExecuteAct(Action_Stack *s)
+void ExecuteAct(MousePose *m, Action_Stack *s)
 {
 	if(cur_phase == EXECUTE_PHR)
 	{
@@ -470,6 +470,7 @@ void ExecuteAct(Action_Stack *s)
 				default:
 					break;
 			}
+			PoseUpdate(m, a);
 		}
 	}
 }

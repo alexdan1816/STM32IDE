@@ -36,7 +36,7 @@
 	double encoder_progress = 0;
 	double encoder_output = 0;
 	double encoder_target = 0;
-
+	volatile bool begin_flag = false;
 	//---------------------Target length of move forward but not accurate; unit : mm
 	float s_require = 150;
 	float s_remain = 0;
@@ -196,7 +196,7 @@
 
 	void Move_forward(Motor *_motorL, Motor *_motorR)
 	{
-			if(cur_state == IDLE)
+			if(cur_state == MOVE && !begin_flag)
 			{
 				Mencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
 				Mencoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
@@ -207,9 +207,11 @@
 
 				v_next = a_up*DT;
 
+				begin_flag = true;
+
 				HAL_GPIO_WritePin(LED_FORWARD_GPIO_Port, LED_FORWARD_Pin, SET);
 			}
-			else if(cur_state == MOVE)
+			else if(cur_state == MOVE && begin_flag)
 			{
 				Mencoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
 				Mencoder_now_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
@@ -227,6 +229,7 @@
 					__HAL_TIM_SET_COUNTER(_motorL->htim_encoder, 0);
 					__HAL_TIM_SET_COUNTER(_motorR->htim_encoder, 0);
 					HAL_GPIO_WritePin(LED_FORWARD_GPIO_Port, LED_FORWARD_Pin, RESET);
+					begin_flag = false;
 					cur_state = COOL_DOWN;
 					return;
 				}
@@ -308,7 +311,7 @@
 	}
 	void Move_Left(Motor *_motorL, Motor *_motorR)
 	{
-		if(cur_state == IDLE)
+		if(cur_state == TURN_LEFT && !begin_flag)
 		{
 			Tencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
 			Tencoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
@@ -316,10 +319,11 @@
 			encoder_target   = TURN_DEG;
 			encoder_progress = 0;
 			encoder_output   = 0;
+			begin_flag = true;
 			HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, SET);
 			return;
 		}
-		else if(cur_state == TURN_LEFT)
+		else if(cur_state == TURN_LEFT && begin_flag)
 		{
 			//READING CURRENT ENCODER
 			Tencoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
@@ -343,7 +347,7 @@
 				__HAL_TIM_SET_COUNTER(_motorR->htim_encoder, 0);
 				cur_state = COOL_DOWN;
 				HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, RESET);
-
+				begin_flag = false;
 				prevtime = HAL_GetTick();
 				return;
 			}
@@ -353,7 +357,7 @@
 	}
 	void Move_Right(Motor *_motorL, Motor *_motorR)
 	{
-		if(cur_state == IDLE)
+		if(cur_state == TURN_RIGHT && !begin_flag)
 		{
 			Tencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
 			Tencoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
@@ -361,9 +365,11 @@
 			encoder_target   = TURN_DEG;
 			encoder_progress = 0;
 			encoder_output   = 0;
+			begin_flag = true;
+			HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, SET);
 			return;
 		}
-		else if(cur_state == TURN_RIGHT)
+		else if(cur_state == TURN_RIGHT && begin_flag)
 		{
 			//READING CURRENT ENCODER
 			Tencoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
@@ -375,7 +381,7 @@
 			Tencoder_prev_L = Tencoder_now_L;
 			Tencoder_prev_R = Tencoder_now_R;
 
-			encoder_progress += - PULSE_TO_DEG*0.5*(double)(Tprog_L + Tprog_R); // turn from pulse to degree
+			encoder_progress +=  PULSE_TO_DEG*0.5*(double)(- Tprog_L - Tprog_R); // turn from pulse to degree
 
 			if(encoder_target - encoder_progress < TURN_TOLERANCE)
 			{
@@ -385,13 +391,15 @@
 	//			Motor_SetPwm(_motorL);
 				__HAL_TIM_SET_COUNTER(_motorL->htim_encoder, 0);
 				__HAL_TIM_SET_COUNTER(_motorR->htim_encoder, 0);
+				HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, RESET);
 				cur_state = COOL_DOWN;
+				begin_flag = false;
 				prevtime = HAL_GetTick();
 				return;
 			}
 		}
-		_motorL->Pid_output = -(encoder_output * 499)/90;
-		_motorR->Pid_output = (encoder_output)*499/90;
+		_motorL->Pid_output = (encoder_output * 499)/90;
+		_motorR->Pid_output = -(encoder_output)*499/90;
 	}
 
 

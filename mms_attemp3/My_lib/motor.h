@@ -111,6 +111,8 @@ extern double encoder_progress;
 extern double encoder_output;
 extern double encoder_target;
 
+
+extern volatile bool begin_flag;
 extern volatile State cur_state;
 
 

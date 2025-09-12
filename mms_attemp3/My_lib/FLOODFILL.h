@@ -75,7 +75,7 @@ bool CellqueueFull(Cell_Queue*cellqueue);
 Cell *DegCellQueue(Cell_Queue*q);
 void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y);
 
-void ExecuteAct(Action_Stack *s);
+void ExecuteAct(MousePose *m ,Action_Stack *s);
 
 
 #endif /* FLOODFILL_H_ */

@@ -248,7 +248,7 @@ int main(void)
 	  if(tick_start)  // tick 1ms
 	  {
 		  tick_start = false;
-//		  cur_state = SENSOR_PHR;
+//		  cur_phase = SENSOR_PHR;
 //		  ReadIR(&hadc1);
 //		  HAL_Delay(100);
 		  Motor_GetSpeed(&Left_motor);
@@ -296,7 +296,7 @@ int main(void)
 			case EXECUTE_PHR:
 				switch (cur_state) {
 					case IDLE:
-						ExecuteAct(toMyActionStack);
+						ExecuteAct(toMyMousePose, toMyActionStack);
 						break;
 					case TURN_LEFT:
 						Move_Left(pLeft, pRight);
@@ -314,7 +314,7 @@ int main(void)
 						break;
 					case TURN_RIGHT:
 						Move_Right(pLeft, pRight);
-						if(cur_state == TURN_LEFT)
+						if(cur_state == TURN_RIGHT)
 						{
 						PID_Compute(&TURNPID);
 						}
@@ -356,12 +356,7 @@ int main(void)
 						Motor_SetPwm(&Right_motor);
 						break;
 					case COOL_DOWN:
-						if(Right_motor.Pid_output != 0 && Left_motor.Pid_output !=0 )
-						{
-							cur_phase = ABANDONE_PHR;
-							break;
-						}
-						else if(HAL_GetTick() - prevtime > 1000)
+						if(HAL_GetTick() - prevtime > 1000)
 						{
 							PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
 							PID_SetMode(&RPID,_PID_MODE_AUTOMATIC);
