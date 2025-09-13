@@ -20,6 +20,7 @@
 	{
 		BEGIN_PHR,
 		GYRO_PHR,
+		SIGNAL_PHR,
 		SENSOR_PHR,
 		UPDATE_PHR,
 		FINDPATH_PHR,
@@ -48,6 +49,8 @@
 
 	//extern Action_Stack action;
 	extern volatile Phase cur_phase;
+	extern uint32_t led_time;
+	extern uint32_t buz_time;
 
 	void Action_Stack_Init(Action_Stack *a);
 
@@ -57,7 +60,12 @@
 	void Push_act(Action_Stack *a, Action_type act);
 	Action_type Pop_act(Action_Stack *a);
 
+	void LED_ON();
+	void LED_OFF();
+	void BUZ_ON();
+	void BUZ_OFF();
 
-
+	void BUZ_TOG();
+	void LED_TOG();
 
 	#endif /* FSM_H_ */

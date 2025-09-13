@@ -89,6 +89,8 @@ Cell_Queue *toMyCellQueue = &_MyCellQueue;
 Action_Stack _MyActionStack;
 Action_Stack *toMyActionStack = &_MyActionStack;
 
+
+
 //-----LOW LEVEL FSM STATE
 
 /*extern State cur_state = IDLE;*/ //declared in motor.h and motor.c
@@ -248,15 +250,33 @@ int main(void)
 	  if(tick_start)  // tick 1ms
 	  {
 		  tick_start = false;
+
 //		  cur_phase = SENSOR_PHR;
 //		  ReadIR(&hadc1);
 //		  HAL_Delay(100);
+
+
 		  Motor_GetSpeed(&Left_motor);
 		  Motor_GetSpeed(&Right_motor);
 
 		  switch (cur_phase) {
 		  	case BEGIN_PHR:
-		  		if(Check_Start(&hadc1)) cur_phase = GYRO_PHR;
+		  		if(Check_Start(&hadc1))
+		  		{
+		  			cur_phase = GYRO_PHR;
+		  			LED_OFF();
+		  			BUZ_OFF();
+		  		}
+		  		if (HAL_GetTick()-buz_time > 500 && cur_phase == BEGIN_PHR)
+		  		{
+		  			BUZ_TOG();
+		  			buz_time = HAL_GetTick();
+		  		}
+		  		if (HAL_GetTick() - led_time > 250 && cur_phase == BEGIN_PHR)
+		  		{
+		  			LED_TOG();
+		  			led_time = HAL_GetTick();
+		  		}
 		  		break;
 		  	case GYRO_PHR:
 		  		if(Gyro_Calibrate())
