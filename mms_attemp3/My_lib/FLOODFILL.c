@@ -19,12 +19,10 @@ void MazeInitialize(Maze *maze)
 	{
 		for(int j = 0 ; j < 16; j++)
 		{
-			int d1 = abs(i - 7) + abs(j - 7);
-			int d2 = abs(i - 8) + abs(j - 8);
-			maze->cells[i][j].value = (uint8_t)((d1 < d2) ? d1 : d2);  // 0..14
-			maze->cells[i][j].x = i;
-			maze->cells[i][j].y = j;
-			maze->cells[i][j].visited = false;
+			int dx = 0, dy = 0;
+			if (i < 7) dx = 7 - i; else if (i > 8) dx = i - 8;
+			if (j < 7) dy = 7 - j; else if (j > 8) dy = j - 8;
+			maze->cells[i][j].value = (uint8_t)(dx + dy);
 		}
 	}
 	for(int i = 0; i < 16 ; i++)
@@ -163,7 +161,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x+ 1])
+			if(!maze->VerticalWall[y][x+ 1])
 			{
 				if(LegalCell(x, y, x + 1, y, maze))
 				{
@@ -172,7 +170,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x])
+			if(!maze->VerticalWall[y][x])
 			{
 				if(LegalCell(x, y, x - 1, y, maze))
 				{
@@ -181,7 +179,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->HorizontalWall[y][x])
+			if(!maze->HorizontalWall[y][x])
 			{
 				if(LegalCell(x, y, x, y - 1, maze))
 				{
@@ -200,7 +198,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x + 1])
+			if(!maze->VerticalWall[y][x + 1])
 			{
 				if(LegalCell(x, y, x + 1, y, maze))
 				{
@@ -208,7 +206,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x])
+			if(!maze->VerticalWall[y][x])
 			{
 				if(LegalCell(x, y, x - 1, y, maze))
 				{
@@ -216,7 +214,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->HorizontalWall[y][x])
+			if(!maze->HorizontalWall[y][x])
 			{
 				if(LegalCell(x, y, x, y - 1, maze))
 				{
@@ -235,7 +233,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x + 1])
+			if(!maze->VerticalWall[y][x + 1])
 			{
 				if(LegalCell(x, y, x + 1, y, maze))
 				{
@@ -244,7 +242,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x])
+			if(!maze->VerticalWall[y][x])
 			{
 				if(LegalCell(x, y, x - 1, y, maze))
 				{
@@ -253,7 +251,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->HorizontalWall[y][x])
+			if(!maze->HorizontalWall[y][x])
 			{
 				if(LegalCell(x, y, x, y - 1, maze))
 				{
@@ -272,7 +270,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x + 1])
+			if(!maze->VerticalWall[y][x + 1])
 			{
 				if(LegalCell(x, y, x + 1, y, maze))
 				{
@@ -280,7 +278,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->VerticalWall[y][x])
+			if(!maze->VerticalWall[y][x])
 			{
 				if(LegalCell(x, y, x - 1, y, maze))
 				{
@@ -288,7 +286,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 					return true;
 				}
 			}
-			else if(!maze->HorizontalWall[y][x])
+			if(!maze->HorizontalWall[y][x])
 			{
 				if(LegalCell(x, y, x, y - 1, maze))
 				{
@@ -306,15 +304,19 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 }
 bool LegalCell(int8_t curX ,int8_t curY, int8_t nextX, int8_t nextY, Maze *maze)
 {
-	if(curX == nextX) // same collum
-	{
-		return maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1;
-	}
-	else if(curY == nextY)
-	{
-		return maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1;
-	}
-	else return false;
+//	if(curX == nextX) // same collum
+//	{
+//		return maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1;
+//	}
+//	else if(curY == nextY)
+//	{
+//		return maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1;
+//	}
+//	else return false;
+	if(maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1)
+		return true;
+	else
+		return false;
 }
 
 
@@ -474,3 +476,12 @@ void ExecuteAct(MousePose *m, Action_Stack *s)
 		}
 	}
 }
+bool CheckGoal(MousePose *m, Maze *ma)
+{
+	if(ma->cells[m->x][m->y].value == 0)
+	{
+		return true;
+	}
+	return false;
+}
+

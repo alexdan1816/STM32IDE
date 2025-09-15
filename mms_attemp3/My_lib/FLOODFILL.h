@@ -76,6 +76,7 @@ Cell *DegCellQueue(Cell_Queue*q);
 void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y);
 
 void ExecuteAct(MousePose *m ,Action_Stack *s);
+bool CheckGoal(MousePose *m, Maze *ma);
 
 
 #endif /* FLOODFILL_H_ */

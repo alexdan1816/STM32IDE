@@ -20,7 +20,9 @@
 
 #define PULSE_TO_DEG 0.23
 #define TURN_TOLERANCE 12
+#define BACK_TOLERANCE 15
 #define TURN_DEG 105
+#define BACK_DEG 205
 
 #define ENCODER_PPR 570     // pulses per revolution
 

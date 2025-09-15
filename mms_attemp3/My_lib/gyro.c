@@ -11,9 +11,7 @@
 #include "FSM.h"
 #include "main.h"
 
-
 extern I2C_HandleTypeDef hi2c1;
-
 
 uint8_t whoami = 0;
 float acc_raw[3] = {0};
@@ -27,7 +25,7 @@ static float gz_filt = 0.0f;
 float gyro_bias;
 float gz = 0;
 float offset_find;
- uint32_t offset_cout = 0;
+uint32_t offset_cout = 0;
 
 static uint32_t last_ms = 0;
 
@@ -63,20 +61,20 @@ void LSM6DS3_Init(void)
     LSM6DS3_Write(REG_CTRL2_G, 0x40);
 }
 
-//void LSM6DS3_ReadAccel(void)
+// void LSM6DS3_ReadAccel(void)
 //{
-//    uint8_t buf[6];
-//    LSM6DS3_ReadMulti(REG_OUTX_L_XL, buf, 6);
+//     uint8_t buf[6];
+//     LSM6DS3_ReadMulti(REG_OUTX_L_XL, buf, 6);
 //
-//    acc_raw[0] = (int16_t)(buf[1] << 8 | buf[0]);
-//    acc_raw[1] = (int16_t)(buf[3] << 8 | buf[2]);
-//    acc_raw[2] = (int16_t)(buf[5] << 8 | buf[4]);
+//     acc_raw[0] = (int16_t)(buf[1] << 8 | buf[0]);
+//     acc_raw[1] = (int16_t)(buf[3] << 8 | buf[2]);
+//     acc_raw[2] = (int16_t)(buf[5] << 8 | buf[4]);
 //
-//    // Đổi ra mg (±2g = 0.061 mg/LSB)
-//    acc_mg[0] = acc_raw[0] * 0.061f;
-//    acc_mg[1] = acc_raw[1] * 0.061f;
-//    acc_mg[2] = acc_raw[2] * 0.061f;
-//}
+//     // Đổi ra mg (±2g = 0.061 mg/LSB)
+//     acc_mg[0] = acc_raw[0] * 0.061f;
+//     acc_mg[1] = acc_raw[1] * 0.061f;
+//     acc_mg[2] = acc_raw[2] * 0.061f;
+// }
 
 float LSM6DS3_ReadGyro(void)
 {
@@ -94,75 +92,80 @@ float LSM6DS3_ReadGyro(void)
     return gyro_dps[2];
 }
 
-float Gyro_ReadYawDps(){
-	gz = LSM6DS3_ReadGyro();
-	if (!filt_init) {
-		gz = 0;
-		gz_filt = gz;
-		filt_init = true;
-		return gz_filt;
-	}
-	else{
-		gz -= gyro_bias;
-	const float alpha = 0.15f;
-    gz_filt = (1.0f - alpha)*gz_filt + alpha*gz;
-    return gz_filt;
-	}// dps đã lọc
+float Gyro_ReadYawDps()
+{
+    gz = LSM6DS3_ReadGyro();
+    if (!filt_init)
+    {
+        gz = 0;
+        gz_filt = gz;
+        filt_init = true;
+        return gz_filt;
+    }
+    else
+    {
+        gz -= gyro_bias;
+        const float alpha = 0.15f;
+        gz_filt = (1.0f - alpha) * gz_filt + alpha * gz;
+        return gz_filt;
+    } // dps đã lọc
 }
 
 float Gyro_GetOffset()
 {
-	gz = LSM6DS3_ReadGyro();
-	if (!filt_init) {
-		gz = 0;
-		gz_filt = gz;
-		filt_init = true;
-		return gz_filt;
-	}
-	else{
-		gz -= gyro_bias;
-	const float alpha = 0.15f;
-    gz_filt = (1.0f - alpha)*gz_filt + alpha*gz;
-    return gz_filt;
-	}// dps đã lọc
+    gz = LSM6DS3_ReadGyro();
+    if (!filt_init)
+    {
+        gz = 0;
+        gz_filt = gz;
+        filt_init = true;
+        return gz_filt;
+    }
+    else
+    {
+        gz -= gyro_bias;
+        const float alpha = 0.15f;
+        gz_filt = (1.0f - alpha) * gz_filt + alpha * gz;
+        return gz_filt;
+    } // dps đã lọc
 }
 
-void Gyro_UpdateAngle(){
+void Gyro_UpdateAngle()
+{
     uint32_t now = HAL_GetTick();
-    float dt = (last_ms==0) ? 0.05f : (now - last_ms)/1000.0f;
+    float dt = (last_ms == 0) ? 0.05f : (now - last_ms) / 1000.0f;
 
     float gz_dps = Gyro_ReadYawDps();
     angle += gz_dps * dt;
 
-    if (angle > 180.f)  angle -= 360.f;
-    if (angle < -180.f) angle += 360.f;
+    if (angle > 180.f)
+        angle -= 360.f;
+    if (angle < -180.f)
+        angle += 360.f;
 
     last_ms = now;
 }
 void Gyro_ResetAngle(void)
 {
-    angle    = 0.0;
-    gz_filt  = 0.0f;      // xóa trạng thái bộ lọc
-    filt_init = false;    // buộc init lại filter cho mẫu đầu
-    last_ms  = HAL_GetTick();
+    angle = 0.0;
+    gz_filt = 0.0f;    // xóa trạng thái bộ lọc
+    filt_init = false; // buộc init lại filter cho mẫu đầu
+    last_ms = HAL_GetTick();
 }
 bool Gyro_Calibrate()
 {
-	if(offset_cout < 700)
-	{
-		offset_find += LSM6DS3_ReadGyro();
-	    offset_cout ++;
-	    return false;
-	}
-	else if(offset_cout == 700)
-	{
-		gyro_bias = offset_find / offset_cout;
-		offset_cout = 0;
-		offset_find = 0;
-		return true;
-	}
-	return false;
+    if (offset_cout < 700)
+    {
+        offset_find += LSM6DS3_ReadGyro();
+        offset_cout++;
+        return false;
+    }
+    else if (offset_cout == 700)
+    {
+        gyro_bias = offset_find / offset_cout;
+        offset_cout = 0;
+        offset_find = 0;
+        return true;
+    }
+    return false;
 }
-
-
-
