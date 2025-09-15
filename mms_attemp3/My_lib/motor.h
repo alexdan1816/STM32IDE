@@ -140,7 +140,7 @@ void Motor_stop(Motor *motor);
 void Motor_SetTarget(Motor*motor, double target);
 
 //----------------------Advance Control
-void Stabilize(Motor *right, Motor *left);
+void Pre_Calibrate(Motor *right, Motor *left);
 
 
 void Move_forward(Motor *_motorL, Motor *_motorR);

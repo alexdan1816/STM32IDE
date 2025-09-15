@@ -20,6 +20,8 @@
 	{
 		BEGIN_PHR,
 		GYRO_PHR,
+		PRE_CALIB_PHR, // To get the IR comparison value
+		CALIB_PHR, // To re-centering the mouse
 		SIGNAL_PHR,
 		SENSOR_PHR,
 		UPDATE_PHR,

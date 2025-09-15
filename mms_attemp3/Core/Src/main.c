@@ -35,7 +35,7 @@
 PID_TypeDef RPID;
 PID_TypeDef LPID;
 PID_TypeDef TURNPID;
-
+PID_TypeDef TURNBACKPID;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -164,7 +164,7 @@ int main(void)
 //             &htim2, TIM_CHANNEL_1, &htim4, 0.3, 1.9, 0.003);
 Motor_Init(&Right_motor, RIGHT,
 		AIN1_GPIO_Port, AIN1_Pin, AIN2_GPIO_Port, AIN2_Pin,
-		&htim2, TIM_CHANNEL_2, &htim3, 0.5, 1.9, 0.003);
+		&htim2, TIM_CHANNEL_2, &htim3, 0.5, 1.9, 0.004);
 Motor_Init(&Left_motor, LEFT,
 		BIN1_GPIO_Port, BIN1_Pin, BIN2_GPIO_Port, BIN2_Pin,
 		&htim2, TIM_CHANNEL_1, &htim4, 0.5, 1.9, 0.003);
@@ -199,15 +199,15 @@ Motor_Init(&Left_motor, LEFT,
   PID_SetSampleTime(&LPID, 2);
   PID_SetOutputLimits(&LPID, -499, 499);
 
-//  PID(&TURNPID, &encoder_progress, &encoder_output, &encoder_target, 0.45, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
-    PID(&TURNPID, &encoder_progress, &encoder_output, &encoder_target, 0.5, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID(&TURNPID, &encoder_progress, &encoder_output, &encoder_target, 0.45, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID(&TURNBACKPID, &encoder_progress, &encoder_output, &encoder_target, 0.5, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
   PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
   PID_SetSampleTime(&TURNPID, 1);
   PID_SetOutputLimits(&TURNPID, -90, 90);
 
   // State initialization
   cur_phase = BEGIN_PHR;
-  cur_state = IDLE;
+  cur_state = COOL_DOWN;
   check_count = 0;
 
   // Gyro initialization
@@ -271,26 +271,42 @@ Motor_Init(&Left_motor, LEFT,
 //    	  }
 //    	  Motor_SetPwm(&Left_motor);
 //    	  Motor_SetPwm(&Right_motor);
-////			case TURN_BACK:
-////				Move_backward(pLeft, pRight);
-////				PID_Compute(&TURNPID);
-////				if (cur_state == COOL_DOWN)
-////				{
-////					prevtime = HAL_GetTick();
-////					PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
-////				}
-////				Motor_SetPwm(&Left_motor);
-////				Motor_SetPwm(&Right_motor);
-////				break;
+//    	  break;
+//			case TURN_BACK:
+//				Move_backward(pLeft, pRight);
+//				PID_Compute(&TURNBACKPID);
+//				if (cur_state == COOL_DOWN)
+//				{
+//					prevtime = HAL_GetTick();
+//					PID_SetMode(&TURNBACKPID, _PID_MODE_MANUAL);
+//				}
+//				Motor_SetPwm(&Left_motor);
+//				Motor_SetPwm(&Right_motor);
+//				break;
+//      case TURN_LEFT:
+//    	  Move_Left(pLeft, pRight);
+//    	            if (cur_state == TURN_LEFT)
+//    	            {
+//    	              PID_Compute(&TURNPID);
+//    	            }
+//    	            if (cur_state == COOL_DOWN)
+//    	            {
+//    	              prevtime = HAL_GetTick();
+//    	              PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
+//    	            }
+//    	            Motor_SetPwm(&Left_motor);
+//    	            Motor_SetPwm(&Right_motor);
+//    	            break;
 //      case COOL_DOWN:
 //    	  if (HAL_GetTick() - prevtime > 1000)
 //    	  {
 //    		  PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
 //    		  PID_SetMode(&RPID, _PID_MODE_AUTOMATIC);
 //    		  PID_SetMode(&LPID, _PID_MODE_AUTOMATIC);
-//    		  cur_state = MOVE;
+//    		  cur_state = TURN_LEFT;
 //    		  prevtime = HAL_GetTick();
 //    	  }
+//    	  break;
 //      default:
 //    	  break;
 //      }
@@ -316,6 +332,7 @@ Motor_Init(&Left_motor, LEFT,
           led_time = HAL_GetTick();
         }
         break;
+      case CALIB_PHR:
       case GYRO_PHR:
         if (Gyro_Calibrate())
         {
@@ -411,11 +428,11 @@ Motor_Init(&Left_motor, LEFT,
           break;
         case TURN_BACK:
           Move_backward(pLeft, pRight);
-          PID_Compute(&TURNPID);
+          PID_Compute(&TURNBACKPID);
           if (cur_state == COOL_DOWN)
           {
         	  prevtime = HAL_GetTick();
-        	  PID_SetMode(&TURNPID, _PID_MODE_MANUAL);
+        	  PID_SetMode(&TURNBACKPID, _PID_MODE_MANUAL);
           }
           Motor_SetPwm(&Left_motor);
           Motor_SetPwm(&Right_motor);
@@ -424,6 +441,7 @@ Motor_Init(&Left_motor, LEFT,
           if (HAL_GetTick() - prevtime > 500)
           {
             PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
+      	  PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
             PID_SetMode(&RPID, _PID_MODE_AUTOMATIC);
             PID_SetMode(&LPID, _PID_MODE_AUTOMATIC);
             cur_state = IDLE;

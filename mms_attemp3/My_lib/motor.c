@@ -441,5 +441,49 @@
 		_motorR->Pid_output = -(encoder_output)*499/90;
 	}
 
+	void Pre_Calibrate(Motor *right, Motor *left)
+	{
+		if(cur_state == TURN_BACK && !begin_flag)
+		{
+			Tencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
+			Tencoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
+			cur_state = TURN_BACK;
+			encoder_target   = BACK_DEG;
+			encoder_progress = 0;
+			encoder_output   = 0;
+			begin_flag = true;
+			HAL_GPIO_WritePin(LED_BACK_GPIO_Port, LED_BACK_Pin, SET);
+			return;
+		}
+		else if(cur_state == TURN_BACK && begin_flag)
+			{
+			//READING CURRENT ENCODER
+			Tencoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
+			Tencoder_now_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
+			//READIGN DELTA ENCODER
+			Tprog_R = Tencoder_now_R - Tencoder_prev_R;
+			Tprog_L = Tencoder_now_L - Tencoder_prev_L;
+			//RESET PREVIOUS ENCODER
+			Tencoder_prev_L = Tencoder_now_L;
+			Tencoder_prev_R = Tencoder_now_R;
+
+			encoder_progress += PULSE_TO_DEG*0.5*(double)(Tprog_L + Tprog_R); // turn from pulse to degree
+
+			if(encoder_target - encoder_progress < BACK_TOLERANCE)
+			{
+				_motorL->Pid_output = 0;
+				_motorR->Pid_output = 0;
+				__HAL_TIM_SET_COUNTER(_motorL->htim_encoder, 0);
+				__HAL_TIM_SET_COUNTER(_motorR->htim_encoder, 0);
+				cur_state = COOL_DOWN;
+				HAL_GPIO_WritePin(LED_BACK_GPIO_Port, LED_BACK_Pin, RESET);
+				begin_flag = false;
+				prevtime = HAL_GetTick();
+				return;
+			}
+			}
+		_motorL->Pid_output = -(encoder_output * 499)/90;
+		_motorR->Pid_output = (encoder_output)*499/90;
+	}
 
 
