@@ -12,7 +12,7 @@
 #include "motor.h"
 
 uint32_t check_count_ff = 0;
-int16_t min_value = 15;
+
 void MazeInitialize(Maze *maze)
 {
 	for(int i = 0; i < 16;i++)
@@ -74,23 +74,14 @@ void MazeFloodFill(Maze *maze, Cell_Queue*q, MousePose *mousepose)
 	{
 		EnqCellQueue(q, mousepose->x, mousepose->y);
 				cur_phase = ALGORITHM2_PHR;
-				return;
 	}
-	if(cur_phase == ALGORITHM2_PHR)
+	else if(cur_phase == ALGORITHM2_PHR)
 	{
-		if(CellqueueEmpty(q))
-		{
-			cur_phase = FINDPATH_PHR;
-		}
-		else
-		{
-			cur_phase = ALGORITHM2_PHR;
-		}
-
 		Cell *q1 = DegCellQueue(q);
 		int8_t x = q1->x;
 		int8_t y = q1->y;
 
+		int16_t min_value = 0;
 		if(!maze->HorizontalWall[y+1][x])
 		{
 			if(maze->cells[x][y+1].value + 1 == maze->cells[x][y].value)
@@ -121,7 +112,7 @@ void MazeFloodFill(Maze *maze, Cell_Queue*q, MousePose *mousepose)
 			}
 			else
 			{
-				min_value = maze->cells[x][y-1].value < min_value ? maze->cells[x][y-1].value : min_value;
+				min_value = maze->cells[x-1][y].value < min_value ? maze->cells[x-1][y].value : min_value;
 			}
 		}
 		if(!maze->VerticalWall[y][x])
@@ -425,34 +416,31 @@ void CellQueueInitialize(Cell_Queue*cellqueue)
 }
 bool CellqueueEmpty(Cell_Queue*cellqueue)
 {
-	if(cellqueue->count == 0)
-		return true;
-	else
-		return false;
+	return (cellqueue->count == 0);
 }
 bool CellqueueFull(Cell_Queue*cellqueue)
 {
-	if(cellqueue->count == MAZEMAXCELLS)
-		return true;
-	else
-		return false;
+	return (cellqueue->count == MAZEMAXCELLS);
 }
 Cell *DegCellQueue(Cell_Queue*q)
 {
-    if (CellqueueEmpty(q)) return NULL;
-    Cell* c = &q->cell_list[q->head];
-    q->head = (q->head + 1) % MAZEMAXCELLS;
-    q->count--;
-    return c;
+	if(CellqueueEmpty(q))
+	{
+		return NULL;
+	}
+	q->head = (q->head + 1)%MAZEMAXCELLS;
+	q->count--;
+	Cell *c = &q->cell_list[q->head - 1];
+	return c;
 }
 void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y)
 {
-    if (CellqueueFull(q)) return;
-    q->cell_list[q->tail].x = x;
-    q->cell_list[q->tail].y = y;
-    q->tail = (q->tail + 1) % MAZEMAXCELLS;
-    q->count++;
-    return;
+	if(CellqueueFull(q)) return;
+	q->tail = (q->tail + 1) % MAZEMAXCELLS;
+	q->cell_list[q->tail].x = x;
+	q->cell_list[q->tail].y = y;
+	q->count++;
+	return;
 }
 
 void ExecuteAct(MousePose *m, Action_Stack *s)

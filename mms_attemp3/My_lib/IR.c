@@ -9,7 +9,6 @@
 #include "IR.h"
 #include "stdbool.h"
 #include "FSM.h"
-#include "motor.h"
 
 uint16_t sensor_data[IR_BUF_LEN];
 float alpha = 0.2f;
@@ -72,6 +71,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
     EmiterOFF();
     cur_phase = UPDATE_PHR;
     return;
+
 	}
     else if( cur_phase == BEGIN_PHR)
     {
@@ -86,18 +86,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
     		start = false;
     		return;
     	}
-    }
-    else if (cur_phase == PRE_CALIB_PHR)
-    {
-        EmiterOFF();
-        // CHỈ nhận kết quả khi đang COOL_DOWN và bạn đã chủ động gọi ReadIR
-        if (cur_state == COOL_DOWN && !calib_ir_start_flag) {
-            calib_value_take    = true;      // báo đã có giá trị IR cho PRE_CALIB
-            calib_ir_start_flag = true;     // reset cờ start để không lặp
-        }
-        return;
-    }
 
+    }
 }
 
 void ReadIR(ADC_HandleTypeDef* hadc)
@@ -119,17 +109,6 @@ void ReadIR(ADC_HandleTypeDef* hadc)
 		{
 			ir_status = BUSY;
 			HAL_GPIO_WritePin(LEFT_IR_EMIT_GPIO_Port, LEFT_IR_EMIT_Pin, SET);
-			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
-		}
-	}
-	else if(cur_phase == PRE_CALIB_PHR)
-	{
-		if(ir_status == OKAY)
-		{
-			ir_status = BUSY;
-			// Bật emitter nếu bạn đo chủ động loại bỏ nền (tùy chiến lược)
-			EmiterON();
-			// delay ngắn nếu LED cần ổn định (ví dụ vài trăm µs) — tránh HAL_Delay trong ISR
 			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
 		}
 	}
