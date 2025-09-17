@@ -36,6 +36,8 @@ PID_TypeDef RPID;
 PID_TypeDef LPID;
 PID_TypeDef TURNPID;
 PID_TypeDef TURNBACKPID;
+PID_TypeDef RIGHTIRPID;
+PID_TypeDef LEFTIRPID;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -68,6 +70,10 @@ Motor *pRight = &Right_motor;
 
 volatile bool tick_start;
 uint32_t check_count;
+
+double frightIRin;
+double fleftIRin;
+
 //-----MAZE VARIABLE------
 
 Maze _MyMaze;
@@ -199,15 +205,32 @@ Motor_Init(&Left_motor, LEFT,
   PID_SetSampleTime(&LPID, 2);
   PID_SetOutputLimits(&LPID, -499, 499);
 
-  PID(&TURNPID, &encoder_progress, &encoder_output, &encoder_target, 0.45, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
   PID(&TURNBACKPID, &encoder_progress, &encoder_output, &encoder_target, 0.5, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
+  PID_SetSampleTime(&TURNBACKPID, 2);
+  PID_SetOutputLimits(&TURNBACKPID, -90, 90);
+
+  PID(&TURNPID, &encoder_progress, &encoder_output, &encoder_target, 0.45, 0.15, 0.1, _PID_P_ON_E, _PID_CD_DIRECT);
   PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
   PID_SetSampleTime(&TURNPID, 1);
   PID_SetOutputLimits(&TURNPID, -90, 90);
 
+  PID(&RIGHTIRPID, &frightIRin, &frightIRoutput, &frightIRsetvalue, 0.5, 0, 0, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID_SetMode(&RIGHTIRPID, _PID_MODE_AUTOMATIC);
+  PID_SetSampleTime(&RIGHTIRPID, 1);
+  PID_SetOutputLimits(&RIGHTIRPID, -100, 100);
+
+  PID(&LEFTIRPID, &fleftIRin, &fleftIRoutput, &fleftIRsetvalue, 0.5, 0, 0, _PID_P_ON_E, _PID_CD_DIRECT);
+  PID_SetMode(&LEFTIRPID, _PID_MODE_AUTOMATIC);
+  PID_SetSampleTime(&LEFTIRPID, 1);
+  PID_SetOutputLimits(&LEFTIRPID, -100, 100);
+
+
   // State initialization
   cur_phase = BEGIN_PHR;
-  cur_state = COOL_DOWN;
+  cur_state = IDLE;
+  pre_calib_state = IDLE;
+
   check_count = 0;
 
   // Gyro initialization
@@ -303,7 +326,7 @@ Motor_Init(&Left_motor, LEFT,
 //    		  PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
 //    		  PID_SetMode(&RPID, _PID_MODE_AUTOMATIC);
 //    		  PID_SetMode(&LPID, _PID_MODE_AUTOMATIC);
-//    		  cur_state = TURN_LEFT;
+//    		  cur_state = MOVE;
 //    		  prevtime = HAL_GetTick();
 //    	  }
 //    	  break;
@@ -314,10 +337,10 @@ Motor_Init(&Left_motor, LEFT,
 
       switch (cur_phase)
       {
-      case BEGIN_PHR:
+      case BEGIN_PHR: // START PROGRAM
         if (Check_Start(&hadc1))
         {
-          cur_phase = GYRO_PHR;
+          cur_phase = PRE_CALIB_PHR;
           LED_OFF();
           BUZ_OFF();
         }
@@ -332,8 +355,63 @@ Motor_Init(&Left_motor, LEFT,
           led_time = HAL_GetTick();
         }
         break;
-      case CALIB_PHR:
-      case GYRO_PHR:
+      case PRE_CALIB_PHR: // GET THE  IR OFFSET VALUE
+    	  switch (cur_state) {
+  			case IDLE:
+  				if(!calib_value_take && calib_turn == 0)
+  				{
+  					cur_state = TURN_BACK;
+  				}
+  				else if(calib_value_take && calib_turn == 1)
+  				{
+  					cur_state = TURN_BACK;
+  				}
+  				else if(calib_value_take && calib_turn == 2)
+  				{
+  					cur_phase = GYRO_PHR;
+  					calib_turn = 0;
+  					calib_value_take = false;
+  				}
+  				break;
+  			case COOL_DOWN:
+  	            PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
+  				if(!calib_value_take && !calib_ir_start_flag)
+  				{
+  					if(HAL_GetTick() - prevtime > 1000)
+  					{
+  						ReadIR(&hadc1);
+  						prevtime = HAL_GetTick();
+  					}
+  				}
+  				if(calib_value_take)
+  				{
+  					frightIRsetvalue = (double)FRIGHT_IR;
+  					fleftIRsetvalue = (double)FLEFT_IR;
+  					cur_state = IDLE;
+  				}
+  				break;
+  			case TURN_BACK:
+  				Move_backward(pLeft, pRight);
+  				if(cur_state == TURN_BACK)
+  				{
+  				    PID_Compute(&TURNBACKPID);              // chỉ tính khi CHƯA xong
+  				}
+  				PID_Compute(&TURNBACKPID);
+  				if (cur_state == COOL_DOWN)
+  				{
+  					calib_turn += 1;
+  					prevtime = HAL_GetTick();
+  					PID_SetMode(&TURNBACKPID, _PID_MODE_MANUAL);
+  				}
+  				Motor_SetPwm(&Left_motor);
+  				Motor_SetPwm(&Right_motor);
+  				break;
+  			default:
+  				break;
+  		}
+    	  break;
+//      case CALIB_PHR:
+        case GYRO_PHR: // CALIBRATE GYRO
         if (Gyro_Calibrate())
         {
           cur_phase = SENSOR_PHR;
@@ -344,13 +422,13 @@ Motor_Init(&Left_motor, LEFT,
           cur_phase = GYRO_PHR;
           break;
         }
-      case SENSOR_PHR:
+      case SENSOR_PHR: // GET NEW CELL WALL INFORMATION
         ReadIR(&hadc1);
         break;
-      case UPDATE_PHR:
+      case UPDATE_PHR: // UPDATE MAZE INFORMATION
         MazeUpdate(toMyMaze, toMyMousePose);
         break;
-      case FINDPATH_PHR:
+      case FINDPATH_PHR: // FIND NEXT CELL TO GO
 
         if (FindNextCell(toMyMaze, toMyMousePose, toMyActionStack))
         {
@@ -441,7 +519,7 @@ Motor_Init(&Left_motor, LEFT,
           if (HAL_GetTick() - prevtime > 500)
           {
             PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
-      	  PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
+            PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
             PID_SetMode(&RPID, _PID_MODE_AUTOMATIC);
             PID_SetMode(&LPID, _PID_MODE_AUTOMATIC);
             cur_state = IDLE;

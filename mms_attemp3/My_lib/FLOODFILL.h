@@ -18,6 +18,7 @@
 
 typedef enum
 {
+	NONE_DIR,
 	NORTH,
 	EAST,
 	SOUTH,
@@ -58,6 +59,7 @@ typedef struct
 extern const int8_t dx[4];
 extern const int8_t dy[4];
 extern uint32_t check_count_ff;
+extern int16_t min_value;
 
 
 void MazeInitialize(Maze *maze);
@@ -77,6 +79,8 @@ void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y);
 
 void ExecuteAct(MousePose *m ,Action_Stack *s);
 bool CheckGoal(MousePose *m, Maze *ma);
+
+
 
 
 #endif /* FLOODFILL_H_ */

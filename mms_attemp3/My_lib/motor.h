@@ -22,7 +22,7 @@
 #define TURN_TOLERANCE 12
 #define BACK_TOLERANCE 15
 #define TURN_DEG 105
-#define BACK_DEG 205
+#define BACK_DEG 210
 
 #define ENCODER_PPR 570     // pulses per revolution
 
@@ -117,7 +117,15 @@ extern double encoder_target;
 extern volatile bool begin_flag;
 extern volatile State cur_state;
 
+extern volatile State pre_calib_state;
+extern volatile bool calib_value_take;
+extern volatile bool calib_ir_start_flag;
+extern volatile int8_t calib_turn;
 
+extern double frightIRsetvalue;
+extern double fleftIRsetvalue;
+extern double frightIRoutput;
+extern double fleftIRoutput;
 
 //----------------------initialize
 void Motor_Init(Motor *_motor,
@@ -140,7 +148,6 @@ void Motor_stop(Motor *motor);
 void Motor_SetTarget(Motor*motor, double target);
 
 //----------------------Advance Control
-void Pre_Calibrate(Motor *right, Motor *left);
 
 
 void Move_forward(Motor *_motorL, Motor *_motorR);
@@ -150,7 +157,6 @@ void Move_Right(Motor *_motorL, Motor *_motorR);
 void Move_Left_enhanced(Motor *_motorL, Motor*_motorR, float accelerate);
 
 void TurnLeft_StartByPulses(Motor *left, Motor *right, uint16_t pulses, double speed_rpm);
-
 
 
 #endif /* MOTOR_H_ */
