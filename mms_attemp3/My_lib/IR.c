@@ -89,13 +89,20 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
     }
     else if (cur_phase == PRE_CALIB_PHR)
     {
-        EmiterOFF();
-        // CHỈ nhận kết quả khi đang COOL_DOWN và bạn đã chủ động gọi ReadIR
+    	HAL_GPIO_WritePin(FLEFT_IR_EMIT_GPIO_Port, FLEFT_IR_EMIT_Pin, RESET);
+    	HAL_GPIO_WritePin(FRIGHT_IR_EMIT_GPIO_Port, FRIGHT_IR_EMIT_Pin, RESET);
         if (cur_state == COOL_DOWN && !calib_ir_start_flag) {
             calib_value_take    = true;      // báo đã có giá trị IR cho PRE_CALIB
             calib_ir_start_flag = true;     // reset cờ start để không lặp
         }
         return;
+    }
+    else if(cur_phase == CALIB_PHR)
+    {
+    	HAL_GPIO_WritePin(FLEFT_IR_EMIT_GPIO_Port, FLEFT_IR_EMIT_Pin, RESET);
+    	HAL_GPIO_WritePin(FRIGHT_IR_EMIT_GPIO_Port, FRIGHT_IR_EMIT_Pin, RESET);
+    	calib_ir_done_flag = true;
+    	return;
     }
 
 }
@@ -122,13 +129,14 @@ void ReadIR(ADC_HandleTypeDef* hadc)
 			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
 		}
 	}
-	else if(cur_phase == PRE_CALIB_PHR)
+	else if(cur_phase == PRE_CALIB_PHR || cur_phase == CALIB_PHR)
 	{
 		if(ir_status == OKAY)
 		{
 			ir_status = BUSY;
 			// Bật emitter nếu bạn đo chủ động loại bỏ nền (tùy chiến lược)
-			EmiterON();
+			HAL_GPIO_WritePin(FLEFT_IR_EMIT_GPIO_Port, FLEFT_IR_EMIT_Pin, SET);
+			HAL_GPIO_WritePin(FRIGHT_IR_EMIT_GPIO_Port, FRIGHT_IR_EMIT_Pin, SET);
 			// delay ngắn nếu LED cần ổn định (ví dụ vài trăm µs) — tránh HAL_Delay trong ISR
 			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
 		}

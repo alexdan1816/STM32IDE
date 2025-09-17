@@ -314,15 +314,6 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 }
 bool LegalCell(int8_t curX ,int8_t curY, int8_t nextX, int8_t nextY, Maze *maze)
 {
-//	if(curX == nextX) // same collum
-//	{
-//		return maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1;
-//	}
-//	else if(curY == nextY)
-//	{
-//		return maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1;
-//	}
-//	else return false;
 	if(maze->cells[curX][curY].value == maze->cells[nextX][nextY].value + 1)
 		return true;
 	else

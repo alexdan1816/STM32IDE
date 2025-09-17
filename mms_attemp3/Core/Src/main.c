@@ -410,7 +410,17 @@ Motor_Init(&Left_motor, LEFT,
   				break;
   		}
     	  break;
-//      case CALIB_PHR:
+    	case CALIB_PHR:
+    		if(!calib_start)
+    		{
+    			ReadIR(&hadc1);
+    			calib_start =true;
+    		}
+    		if(calib_done)
+    		{
+
+    		}
+
         case GYRO_PHR: // CALIBRATE GYRO
         if (Gyro_Calibrate())
         {

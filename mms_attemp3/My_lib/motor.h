@@ -20,7 +20,7 @@
 
 #define PULSE_TO_DEG 0.23
 #define TURN_TOLERANCE 12
-#define BACK_TOLERANCE 15
+#define BACK_TOLERANCE 17
 #define TURN_DEG 105
 #define BACK_DEG 210
 
@@ -120,6 +120,9 @@ extern volatile State cur_state;
 extern volatile State pre_calib_state;
 extern volatile bool calib_value_take;
 extern volatile bool calib_ir_start_flag;
+extern volatile bool calib_ir_done_flag;
+extern volatile bool calib_done;
+extern volatile bool calib_start;
 extern volatile int8_t calib_turn;
 
 extern double frightIRsetvalue;
@@ -156,7 +159,7 @@ void Move_Left(Motor *_motorL, Motor *_motorR);
 void Move_Right(Motor *_motorL, Motor *_motorR);
 void Move_Left_enhanced(Motor *_motorL, Motor*_motorR, float accelerate);
 
-void TurnLeft_StartByPulses(Motor *left, Motor *right, uint16_t pulses, double speed_rpm);
+void Calib_Move();
 
 
 #endif /* MOTOR_H_ */

@@ -54,7 +54,10 @@
 	volatile State pre_calib_state = IDLE;
 	volatile bool calib_value_take = false;
 	volatile bool calib_ir_start_flag = false;
+	volatile bool calib_done = false;
+	volatile bool calib_start = false;
 	volatile int8_t calib_turn = 0;
+	volatile bool calib_ir_done_flag = false;
 
  double frightIRsetvalue = 0;
  double fleftIRsetvalue = 0;
@@ -449,38 +452,8 @@
 		_motorR->Pid_output = -(encoder_output)*499/90;
 	}
 
-//	void Pre_Calibrate(Motor *right, Motor *left, ADC_HandleTypeDef* hadc)
-//	{
-//		switch (cur_state) {
-//			case IDLE:
-//				if(!calib_value_take)
-//				{
-//					cur_state = TURN_BACK;
-//					break;
-//				}
-//				if(calib_value_take)
-//				{
-//					cur_phase = GYRO_PHR;
-//					break;
-//				}
-//			case COOL_DOWN:
-//				if(!calib_value_take && calib_ir_start_flag)
-//				{
-//					ReadIR(hadc);
-//					calib_ir_start_flag = true;
-//				}
-//				if(calib_value_take)
-//				{
-//					calib_ir_start_flag = false;
-//					cur_state = IDLE;
-//				}
-//				break;
-//			case TURN_BACK:
-//				Move_backward(left, right);
-//				break;
-//			default:
-//				break;
-//		}
-//	}
+void Calib_Move(Motor *_motorL, Motor *_motorR)
+{
 
+}
 
