@@ -50,8 +50,16 @@
 
 	//--------------------State for executing action
 	volatile State cur_state ;
+	//--------------------State for preCalibration
+	volatile State pre_calib_state = IDLE;
+	volatile bool calib_value_take = false;
+	volatile bool calib_ir_start_flag = false;
+	volatile int8_t calib_turn = 0;
 
-
+ double frightIRsetvalue = 0;
+ double fleftIRsetvalue = 0;
+ double frightIRoutput = 0;
+ double fleftIRoutput = 0;
 
 	uint32_t prevtime = 0;
 	void Motor_Init(Motor *_motor,
@@ -262,7 +270,7 @@
 		{
 			Tencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
 			Tencoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
-			cur_state = TURN_BACK;
+//			cur_state = TURN_BACK;
 			encoder_target   = BACK_DEG;
 			encoder_progress = 0;
 			encoder_output   = 0;
@@ -441,49 +449,38 @@
 		_motorR->Pid_output = -(encoder_output)*499/90;
 	}
 
-	void Pre_Calibrate(Motor *right, Motor *left)
-	{
-		if(cur_state == TURN_BACK && !begin_flag)
-		{
-			Tencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
-			Tencoder_prev_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
-			cur_state = TURN_BACK;
-			encoder_target   = BACK_DEG;
-			encoder_progress = 0;
-			encoder_output   = 0;
-			begin_flag = true;
-			HAL_GPIO_WritePin(LED_BACK_GPIO_Port, LED_BACK_Pin, SET);
-			return;
-		}
-		else if(cur_state == TURN_BACK && begin_flag)
-			{
-			//READING CURRENT ENCODER
-			Tencoder_now_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);
-			Tencoder_now_L = __HAL_TIM_GET_COUNTER(_motorL->htim_encoder);
-			//READIGN DELTA ENCODER
-			Tprog_R = Tencoder_now_R - Tencoder_prev_R;
-			Tprog_L = Tencoder_now_L - Tencoder_prev_L;
-			//RESET PREVIOUS ENCODER
-			Tencoder_prev_L = Tencoder_now_L;
-			Tencoder_prev_R = Tencoder_now_R;
-
-			encoder_progress += PULSE_TO_DEG*0.5*(double)(Tprog_L + Tprog_R); // turn from pulse to degree
-
-			if(encoder_target - encoder_progress < BACK_TOLERANCE)
-			{
-				_motorL->Pid_output = 0;
-				_motorR->Pid_output = 0;
-				__HAL_TIM_SET_COUNTER(_motorL->htim_encoder, 0);
-				__HAL_TIM_SET_COUNTER(_motorR->htim_encoder, 0);
-				cur_state = COOL_DOWN;
-				HAL_GPIO_WritePin(LED_BACK_GPIO_Port, LED_BACK_Pin, RESET);
-				begin_flag = false;
-				prevtime = HAL_GetTick();
-				return;
-			}
-			}
-		_motorL->Pid_output = -(encoder_output * 499)/90;
-		_motorR->Pid_output = (encoder_output)*499/90;
-	}
+//	void Pre_Calibrate(Motor *right, Motor *left, ADC_HandleTypeDef* hadc)
+//	{
+//		switch (cur_state) {
+//			case IDLE:
+//				if(!calib_value_take)
+//				{
+//					cur_state = TURN_BACK;
+//					break;
+//				}
+//				if(calib_value_take)
+//				{
+//					cur_phase = GYRO_PHR;
+//					break;
+//				}
+//			case COOL_DOWN:
+//				if(!calib_value_take && calib_ir_start_flag)
+//				{
+//					ReadIR(hadc);
+//					calib_ir_start_flag = true;
+//				}
+//				if(calib_value_take)
+//				{
+//					calib_ir_start_flag = false;
+//					cur_state = IDLE;
+//				}
+//				break;
+//			case TURN_BACK:
+//				Move_backward(left, right);
+//				break;
+//			default:
+//				break;
+//		}
+//	}
 
 
