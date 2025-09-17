@@ -91,6 +91,7 @@ void MazeFloodFill(Maze *maze, Cell_Queue*q, MousePose *mousepose)
 			else
 			{
 				min_value = maze->cells[x][y+1].value;
+
 			}
 		}
 		if(!maze->VerticalWall[y][x+1])
