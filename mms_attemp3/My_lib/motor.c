@@ -13,6 +13,7 @@
 	#include "gyro.h"
 	#include "stdlib.h"
 	#include "stdint.h"
+#include "IR.h"
 
 	//debug
 
@@ -63,6 +64,10 @@
  double fleftIRsetvalue = 0;
  double frightIRoutput = 0;
  double fleftIRoutput = 0;
+ double frightIRin = 0;
+ double fleftIRin = 0;
+
+ uint16_t count = 0;
 
 	uint32_t prevtime = 0;
 	void Motor_Init(Motor *_motor,
@@ -452,8 +457,51 @@
 		_motorR->Pid_output = -(encoder_output)*499/90;
 	}
 
-void Calib_Move(Motor *_motorL, Motor *_motorR)
+void Calib_Move(Motor *_motorL, Motor *_motorR,ADC_HandleTypeDef* hadc, PID_TypeDef *RIGHT, PID_TypeDef *LEFT)
 {
+	if(!calib_start)
+	{
+		ReadIR(hadc);
+		calib_start =true;
+		prevtime = HAL_GetTick();
+	}
+	if(calib_start)
+	{
+		if(HAL_GetTick() - prevtime > 750)
+		{
+						_motorL->Pid_output = 0;
+						_motorR->Pid_output = 0;
+						Motor_SetPwm(_motorL);
+						Motor_SetPwm(_motorR);
+						calib_start = false;
+						calib_done = true;
+						count ++;
+		}
+		else
+		{
+			if(frightIRsetvalue - frightIRin < IR_TOLERANCE)
+				_motorR->Pid_output = 0;
+			else
+			{
+				PID_Compute(RIGHT);
+				_motorR->Pid_output = frightIRoutput;
+			}
+			if(fleftIRsetvalue - fleftIRin < IR_TOLERANCE)
+				_motorL->Pid_output = 0;
+			else
+			{
+				PID_Compute(LEFT);
+				_motorL->Pid_output = fleftIRoutput;
+			}
 
+			PID_Compute(LEFT);
+			_motorL->Pid_output = fleftIRoutput;
+			PID_Compute(RIGHT);
+			_motorR->Pid_output = frightIRoutput;
+			ReadIR(hadc);
+			Motor_SetPwm(_motorR);
+			Motor_SetPwm(_motorL);
+		}
+	}
 }
 

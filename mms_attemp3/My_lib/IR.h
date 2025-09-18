@@ -13,6 +13,7 @@
 #define IR_NUM_CH        4
 #define IR_SAMPLES_PERCH 10
 #define IR_BUF_LEN       (IR_NUM_CH * IR_SAMPLES_PERCH)
+#define IR_TOLERANCE 300
 
 typedef enum { OKAY, BUSY } IR_status;
 

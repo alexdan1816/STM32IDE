@@ -129,6 +129,10 @@ extern double frightIRsetvalue;
 extern double fleftIRsetvalue;
 extern double frightIRoutput;
 extern double fleftIRoutput;
+extern double frightIRin;
+extern double fleftIRin;
+
+extern uint16_t count;
 
 //----------------------initialize
 void Motor_Init(Motor *_motor,
@@ -159,7 +163,7 @@ void Move_Left(Motor *_motorL, Motor *_motorR);
 void Move_Right(Motor *_motorL, Motor *_motorR);
 void Move_Left_enhanced(Motor *_motorL, Motor*_motorR, float accelerate);
 
-void Calib_Move();
+void Calib_Move(Motor *_motorL, Motor *_motorR,ADC_HandleTypeDef* hadc, PID_TypeDef *RIGHT, PID_TypeDef *LEFT);
 
 
 #endif /* MOTOR_H_ */

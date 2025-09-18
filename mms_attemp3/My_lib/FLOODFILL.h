@@ -60,6 +60,7 @@ extern const int8_t dx[4];
 extern const int8_t dy[4];
 extern uint32_t check_count_ff;
 extern int16_t min_value;
+extern int8_t calib_stage;
 
 
 void MazeInitialize(Maze *maze);
@@ -79,6 +80,7 @@ void EnqCellQueue(Cell_Queue *q, int8_t x, int8_t y);
 
 void ExecuteAct(MousePose *m ,Action_Stack *s);
 bool CheckGoal(MousePose *m, Maze *ma);
+bool CalibCornetExit(MousePose *m, Maze *ma, Action_Stack *as); // find corner to calibrate mouse
 
 
 

@@ -13,6 +13,8 @@
 
 uint32_t check_count_ff = 0;
 int16_t min_value = 15;
+int8_t calib_stage = 0; // to count time had calibrated
+
 void MazeInitialize(Maze *maze)
 {
 	for(int i = 0; i < 16;i++)
@@ -453,6 +455,11 @@ void ExecuteAct(MousePose *m, Action_Stack *s)
 	{
 		if(Action_Stack_Empy(s))
 		{
+			if(calib_stage == 1)
+			{
+				cur_phase = CALIB_PHR;
+				return;
+			}
 			check_count_ff++;
 			cur_phase = SENSOR_PHR;
 			return;
@@ -485,6 +492,86 @@ bool CheckGoal(MousePose *m, Maze *ma)
 	if(ma->cells[m->x][m->y].value == 0)
 	{
 		return true;
+	}
+	return false;
+}
+
+bool CalibCornetExit(MousePose *m, Maze *ma, Action_Stack *as)
+{
+	int8_t x = m->x;
+	int8_t y = m->y;
+	switch (m->head) {
+		case NORTH:
+			if( ma->HorizontalWall[y + 1][x] && (ma->VerticalWall[y][x] || ma->VerticalWall[y][x + 1]) )
+			{
+				if(ma->VerticalWall[y][x])
+				{
+					Push_act(as, TURN_LEFT_ACT);
+					return true;
+				}
+				else if(ma->VerticalWall[y][x+1])
+				{
+					Push_act(as, TURN_RIGHT_ACT);
+					return true;
+				}
+			}
+			else
+				return false;
+			break;
+		case EAST:
+			if( ma->VerticalWall[y][x + 1] && (ma->HorizontalWall[y + 1][x] || ma->HorizontalWall[y][x]) )
+			{
+				if(ma->HorizontalWall[y][x])
+				{
+					Push_act(as, TURN_RIGHT_ACT);
+					return true;
+				}
+				else if(ma->HorizontalWall[y+1][x])
+				{
+					Push_act(as, TURN_LEFT_ACT);
+					return true;
+				}
+			}
+			else
+				return false;
+			break;
+		case SOUTH:
+			if( ma->HorizontalWall[y][x] && (ma->VerticalWall[y][x] || ma->VerticalWall[y][x+1]) )
+			{
+				if(ma->VerticalWall[y][x])
+				{
+					Push_act(as, TURN_RIGHT_ACT);
+					return true;
+				}
+				else if(ma->VerticalWall[y][x+1])
+				{
+					Push_act(as, TURN_LEFT_ACT);
+					return true;
+				}
+			}
+			else
+				return false;
+			break;
+		case WEST:
+			if( ma->VerticalWall[y][x] && (ma->HorizontalWall[y + 1][x] || ma->HorizontalWall[y][x]) )
+			{
+				if(ma->HorizontalWall[y][x])
+				{
+					Push_act(as, TURN_LEFT_ACT);
+					return true;
+				}
+				else if(ma->HorizontalWall[y+1][x])
+				{
+					Push_act(as, TURN_RIGHT_ACT);
+					return true;
+				}
+			}
+			else
+				return false;
+			break;
+		default:
+			return false;
+			break;
 	}
 	return false;
 }

@@ -68,11 +68,10 @@ Motor *pLeft = &Left_motor;
 Motor Right_motor;
 Motor *pRight = &Right_motor;
 
+
 volatile bool tick_start;
 uint32_t check_count;
-
-double frightIRin;
-double fleftIRin;
+bool calib_flag = false; // flag for execute calibration act list
 
 //-----MAZE VARIABLE------
 
@@ -225,6 +224,8 @@ Motor_Init(&Left_motor, LEFT,
   PID_SetSampleTime(&LEFTIRPID, 1);
   PID_SetOutputLimits(&LEFTIRPID, -100, 100);
 
+  frightIRsetvalue = 2300;
+  fleftIRsetvalue = 2500;
 
   // State initialization
   cur_phase = BEGIN_PHR;
@@ -334,6 +335,13 @@ Motor_Init(&Left_motor, LEFT,
 //    	  break;
 //      }
 
+//      cur_phase = CALIB_PHR;
+//      if(cur_phase == CALIB_PHR)
+//      {
+//    	  Calib_Move(pLeft, pRight, &hadc1, &RIGHTIRPID, &LEFTIRPID);
+//      }
+
+
 
       switch (cur_phase)
       {
@@ -411,16 +419,29 @@ Motor_Init(&Left_motor, LEFT,
   		}
     	  break;
     	case CALIB_PHR:
-    		if(!calib_start)
+    		if(calib_done == false)
     		{
-    			ReadIR(&hadc1);
-    			calib_start =true;
+    			if(calib_stage == 0 || calib_stage == 1)
+    			Calib_Move(pLeft, pRight, &hadc1, &RIGHTIRPID, &LEFTIRPID);
     		}
     		if(calib_done)
     		{
-
+    			calib_stage += 1;
+    			if(calib_stage == 1)
+    			{
+    				cur_phase = EXECUTE_PHR;
+        			calib_done = false;
+    				break;
+    			}
+    			if(calib_stage == 2)
+    			{
+    				cur_phase = FINDPATH_PHR;
+    				calib_stage = 0;
+    				calib_done = false;
+    				break;
+    			}
     		}
-
+    		break;
         case GYRO_PHR: // CALIBRATE GYRO
         if (Gyro_Calibrate())
         {
@@ -437,9 +458,12 @@ Motor_Init(&Left_motor, LEFT,
         break;
       case UPDATE_PHR: // UPDATE MAZE INFORMATION
         MazeUpdate(toMyMaze, toMyMousePose);
+        if(CalibCornetExit(toMyMousePose, toMyMaze, toMyActionStack))
+        {
+        	cur_phase = CALIB_PHR;
+        }
         break;
       case FINDPATH_PHR: // FIND NEXT CELL TO GO
-
         if (FindNextCell(toMyMaze, toMyMousePose, toMyActionStack))
         {
           cur_phase = EXECUTE_PHR;
