@@ -71,7 +71,6 @@ Motor *pRight = &Right_motor;
 
 volatile bool tick_start;
 uint32_t check_count;
-bool calib_flag = false; // flag for execute calibration act list
 
 //-----MAZE VARIABLE------
 
@@ -169,7 +168,7 @@ int main(void)
 //             &htim2, TIM_CHANNEL_1, &htim4, 0.3, 1.9, 0.003);
 Motor_Init(&Right_motor, RIGHT,
 		AIN1_GPIO_Port, AIN1_Pin, AIN2_GPIO_Port, AIN2_Pin,
-		&htim2, TIM_CHANNEL_2, &htim3, 0.5, 1.9, 0.004);
+		&htim2, TIM_CHANNEL_2, &htim3, 0.5, 1.9, 0.003);
 Motor_Init(&Left_motor, LEFT,
 		BIN1_GPIO_Port, BIN1_Pin, BIN2_GPIO_Port, BIN2_Pin,
 		&htim2, TIM_CHANNEL_1, &htim4, 0.5, 1.9, 0.003);
@@ -348,7 +347,7 @@ Motor_Init(&Left_motor, LEFT,
       case BEGIN_PHR: // START PROGRAM
         if (Check_Start(&hadc1))
         {
-          cur_phase = PRE_CALIB_PHR;
+          cur_phase = SENSOR_PHR;
           LED_OFF();
           BUZ_OFF();
         }
@@ -363,74 +362,75 @@ Motor_Init(&Left_motor, LEFT,
           led_time = HAL_GetTick();
         }
         break;
-      case PRE_CALIB_PHR: // GET THE  IR OFFSET VALUE
-    	  switch (cur_state) {
-  			case IDLE:
-  				if(!calib_value_take && calib_turn == 0)
-  				{
-  					cur_state = TURN_BACK;
-  				}
-  				else if(calib_value_take && calib_turn == 1)
-  				{
-  					cur_state = TURN_BACK;
-  				}
-  				else if(calib_value_take && calib_turn == 2)
-  				{
-  					cur_phase = GYRO_PHR;
-  					calib_turn = 0;
-  					calib_value_take = false;
-  				}
-  				break;
-  			case COOL_DOWN:
-  	            PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
-  				if(!calib_value_take && !calib_ir_start_flag)
-  				{
-  					if(HAL_GetTick() - prevtime > 1000)
-  					{
-  						ReadIR(&hadc1);
-  						prevtime = HAL_GetTick();
-  					}
-  				}
-  				if(calib_value_take)
-  				{
-  					frightIRsetvalue = (double)FRIGHT_IR;
-  					fleftIRsetvalue = (double)FLEFT_IR;
-  					cur_state = IDLE;
-  				}
-  				break;
-  			case TURN_BACK:
-  				Move_backward(pLeft, pRight);
-  				if(cur_state == TURN_BACK)
-  				{
-  				    PID_Compute(&TURNBACKPID);              // chỉ tính khi CHƯA xong
-  				}
-  				PID_Compute(&TURNBACKPID);
-  				if (cur_state == COOL_DOWN)
-  				{
-  					calib_turn += 1;
-  					prevtime = HAL_GetTick();
-  					PID_SetMode(&TURNBACKPID, _PID_MODE_MANUAL);
-  				}
-  				Motor_SetPwm(&Left_motor);
-  				Motor_SetPwm(&Right_motor);
-  				break;
-  			default:
-  				break;
-  		}
-    	  break;
+//      case PRE_CALIB_PHR: // GET THE  IR OFFSET VALUE
+//    	  switch (cur_state) {
+//  			case IDLE:
+//  				if(!calib_value_take && calib_turn == 0)
+//  				{
+//  					cur_state = TURN_BACK;
+//  				}
+//  				else if(calib_value_take && calib_turn == 1)
+//  				{
+//  					cur_state = TURN_BACK;
+//  				}
+//  				else if(calib_value_take && calib_turn == 2)
+//  				{
+//  					cur_phase = GYRO_PHR;
+//  					calib_turn = 0;
+//  					calib_value_take = false;
+//  				}
+//  				break;
+//  			case COOL_DOWN:
+//  	            PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);
+//  				if(!calib_value_take && !calib_ir_start_flag)
+//  				{
+//  					if(HAL_GetTick() - prevtime > 1000)
+//  					{
+//  						ReadIR(&hadc1);
+//  						prevtime = HAL_GetTick();
+//  					}
+//  				}
+//  				if(calib_value_take)
+//  				{
+//  					frightIRsetvalue = (double)FRIGHT_IR;
+//  					fleftIRsetvalue = (double)FLEFT_IR;
+//  					cur_state = IDLE;
+//  				}
+//  				break;
+//  			case TURN_BACK:
+//  				Move_backward(pLeft, pRight);
+//  				if(cur_state == TURN_BACK)
+//  				{
+//  				    PID_Compute(&TURNBACKPID);              // chỉ tính khi CHƯA xong
+//  				}
+//  				PID_Compute(&TURNBACKPID);
+//  				if (cur_state == COOL_DOWN)
+//  				{
+//  					calib_turn += 1;
+//  					prevtime = HAL_GetTick();
+//  					PID_SetMode(&TURNBACKPID, _PID_MODE_MANUAL);
+//  				}
+//  				Motor_SetPwm(&Left_motor);
+//  				Motor_SetPwm(&Right_motor);
+//  				break;
+//  			default:
+//  				break;
+//  		}
+//    	  break;
     	case CALIB_PHR:
-    		if(calib_done == false)
+    		if(calib_flag == false)
     		{
     			if(calib_stage == 0 || calib_stage == 1)
     			Calib_Move(pLeft, pRight, &hadc1, &RIGHTIRPID, &LEFTIRPID);
     		}
-    		if(calib_done)
+    		if(calib_flag == true)
     		{
     			calib_stage += 1;
     			if(calib_stage == 1)
     			{
     				cur_phase = EXECUTE_PHR;
         			calib_done = false;
+        			calib_flag = false;
     				break;
     			}
     			if(calib_stage == 2)
@@ -438,21 +438,22 @@ Motor_Init(&Left_motor, LEFT,
     				cur_phase = FINDPATH_PHR;
     				calib_stage = 0;
     				calib_done = false;
+    				calib_flag = false;
     				break;
     			}
     		}
     		break;
-        case GYRO_PHR: // CALIBRATE GYRO
-        if (Gyro_Calibrate())
-        {
-          cur_phase = SENSOR_PHR;
-          break;
-        }
-        else
-        {
-          cur_phase = GYRO_PHR;
-          break;
-        }
+//        case GYRO_PHR: // CALIBRATE GYRO
+//        if (Gyro_Calibrate())
+//        {
+//          cur_phase = SENSOR_PHR;
+//          break;
+//        }
+//        else
+//        {
+//          cur_phase = GYRO_PHR;
+//          break;
+//        }
       case SENSOR_PHR: // GET NEW CELL WALL INFORMATION
         ReadIR(&hadc1);
         break;
@@ -550,7 +551,7 @@ Motor_Init(&Left_motor, LEFT,
           Motor_SetPwm(&Right_motor);
           break;
         case COOL_DOWN:
-          if (HAL_GetTick() - prevtime > 500)
+          if (HAL_GetTick() - prevtime > 100)
           {
             PID_SetMode(&TURNPID, _PID_MODE_AUTOMATIC);
             PID_SetMode(&TURNBACKPID, _PID_MODE_AUTOMATIC);

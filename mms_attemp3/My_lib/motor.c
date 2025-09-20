@@ -39,7 +39,7 @@
 	double encoder_target = 0;
 	volatile bool begin_flag = false;
 	//---------------------Target length of move forward but not accurate; unit : mm
-	float s_require = 150;
+	float s_require = 160;
 	float s_remain = 0;
 	//*********************Speed profile of move forward but not accurate; unit : rpm
 	float v_stop = 0;
@@ -59,6 +59,8 @@
 	volatile bool calib_start = false;
 	volatile int8_t calib_turn = 0;
 	volatile bool calib_ir_done_flag = false;
+	volatile bool calib_flag = false;
+
 
  double frightIRsetvalue = 0;
  double fleftIRsetvalue = 0;
@@ -464,6 +466,7 @@ void Calib_Move(Motor *_motorL, Motor *_motorR,ADC_HandleTypeDef* hadc, PID_Type
 		ReadIR(hadc);
 		calib_start =true;
 		prevtime = HAL_GetTick();
+		return;
 	}
 	if(calib_start)
 	{
@@ -474,10 +477,11 @@ void Calib_Move(Motor *_motorL, Motor *_motorR,ADC_HandleTypeDef* hadc, PID_Type
 						Motor_SetPwm(_motorL);
 						Motor_SetPwm(_motorR);
 						calib_start = false;
-						calib_done = true;
+						calib_flag = true;
+//						calib_done = true;
 						count ++;
 		}
-		else
+		else if(calib_done)
 		{
 			if(frightIRsetvalue - frightIRin < IR_TOLERANCE)
 				_motorR->Pid_output = 0;
@@ -502,6 +506,7 @@ void Calib_Move(Motor *_motorL, Motor *_motorR,ADC_HandleTypeDef* hadc, PID_Type
 			Motor_SetPwm(_motorR);
 			Motor_SetPwm(_motorL);
 		}
+		return;
 	}
 }
 

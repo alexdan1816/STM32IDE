@@ -22,7 +22,7 @@
 #define TURN_TOLERANCE 12
 #define BACK_TOLERANCE 17
 #define TURN_DEG 105
-#define BACK_DEG 210
+#define BACK_DEG 220
 
 #define ENCODER_PPR 570     // pulses per revolution
 
@@ -124,6 +124,8 @@ extern volatile bool calib_ir_done_flag;
 extern volatile bool calib_done;
 extern volatile bool calib_start;
 extern volatile int8_t calib_turn;
+extern volatile bool calib_flag;
+
 
 extern double frightIRsetvalue;
 extern double fleftIRsetvalue;

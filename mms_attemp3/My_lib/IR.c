@@ -132,7 +132,7 @@ void ReadIR(ADC_HandleTypeDef* hadc)
 			HAL_ADC_Start_DMA(hadc, (uint32_t*)sensor_data, IR_BUF_LEN);
 		}
 	}
-	else if(cur_phase == PRE_CALIB_PHR || cur_phase == CALIB_PHR)
+	else if(cur_phase == PRE_CALIB_PHR)
 	{
 		if(ir_status == OKAY)
 		{

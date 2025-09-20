@@ -22,8 +22,8 @@ void MazeInitialize(Maze *maze)
 		for(int j = 0 ; j < 16; j++)
 		{
 			int dx = 0, dy = 0;
-			if (i < 7) dx = 7 - i; else if (i > 8) dx = i - 8;
-			if (j < 7) dy = 7 - j; else if (j > 8) dy = j - 8;
+			if (i < 3) dx = 3 - i; else if (i > 4) dx = i - 4;
+			if (j < 11) dy = 11 - j; else if (j >12) dy = j - 12;
 			maze->cells[i][j].value = (uint8_t)(dx + dy);
 		}
 	}
