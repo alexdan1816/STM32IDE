@@ -122,9 +122,9 @@ static void MX_TIM4_Init(void);
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -235,7 +235,6 @@ Motor_Init(&Left_motor, LEFT,
 
   // Gyro initialization
   LSM6DS3_Init();
-
   // IR initialization
   HAL_ADCEx_Calibration_Start(&hadc1);
   ir_status = OKAY;
@@ -274,7 +273,6 @@ Motor_Init(&Left_motor, LEFT,
 //      		  cur_phase = SENSOR_PHR;
 //      		  ReadIR(&hadc1);
 //      		  HAL_Delay(100);
-
       Motor_GetSpeed(&Left_motor);
       Motor_GetSpeed(&Right_motor);
 
@@ -347,7 +345,7 @@ Motor_Init(&Left_motor, LEFT,
       case BEGIN_PHR: // START PROGRAM
         if (Check_Start(&hadc1))
         {
-          cur_phase = SENSOR_PHR;
+          cur_phase = GYRO_PHR;
           LED_OFF();
           BUZ_OFF();
         }
@@ -443,17 +441,14 @@ Motor_Init(&Left_motor, LEFT,
     			}
     		}
     		break;
-//        case GYRO_PHR: // CALIBRATE GYRO
-//        if (Gyro_Calibrate())
-//        {
-//          cur_phase = SENSOR_PHR;
-//          break;
-//        }
-//        else
-//        {
-//          cur_phase = GYRO_PHR;
-//          break;
-//        }
+      case GYRO_PHR: // CALIBRATE GYRO
+    	  if(!gyro_calib_done)
+    	  {
+    		  Gyro_Calib();
+    	  }
+    	  else
+    		  cur_phase = SENSOR_PHR;
+    	  break;
       case SENSOR_PHR: // GET NEW CELL WALL INFORMATION
         ReadIR(&hadc1);
         break;
@@ -482,6 +477,7 @@ Motor_Init(&Left_motor, LEFT,
         MazeFloodFill(toMyMaze, toMyCellQueue, toMyMousePose);
         break;
       case EXECUTE_PHR:
+    	Gyro_Angle_update();
         switch (cur_state)
         {
         case IDLE:
@@ -579,15 +575,16 @@ Motor_Init(&Left_motor, LEFT,
       default:
         break;
       }
+
     }
   }
   /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -595,8 +592,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -610,8 +607,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -630,10 +628,10 @@ void SystemClock_Config(void)
 }
 
 /**
- * @brief ADC1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_ADC1_Init(void)
 {
 
@@ -648,7 +646,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 1 */
 
   /** Common config
-   */
+  */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
@@ -662,7 +660,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-   */
+  */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_13CYCLES_5;
@@ -672,7 +670,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-   */
+  */
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -681,7 +679,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-   */
+  */
   sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -690,7 +688,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-   */
+  */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_4;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -700,13 +698,14 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
- * @brief I2C1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_I2C1_Init(void)
 {
 
@@ -733,13 +732,14 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
- * @brief TIM1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM1_Init(void)
 {
 
@@ -778,13 +778,14 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
+
 }
 
 /**
- * @brief TIM2 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM2_Init(void)
 {
 
@@ -830,13 +831,14 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
+
 }
 
 /**
- * @brief TIM3 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM3_Init(void)
 {
 
@@ -890,13 +892,14 @@ static void MX_TIM3_Init(void)
   HAL_NVIC_SetPriority(TIM3_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(TIM3_IRQn);
   /* USER CODE END TIM3_Init 2 */
+
 }
 
 /**
- * @brief TIM4 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM4_Init(void)
 {
 
@@ -938,11 +941,12 @@ static void MX_TIM4_Init(void)
   /* USER CODE BEGIN TIM4_Init 2 */
 
   /* USER CODE END TIM4_Init 2 */
+
 }
 
 /**
- * Enable DMA controller clock
- */
+  * Enable DMA controller clock
+  */
 static void MX_DMA_Init(void)
 {
 
@@ -953,13 +957,14 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -977,10 +982,12 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, BIN1_Pin | BIN2_Pin | LED_RIGHT_Pin | LED_FORWARD_Pin | FRIGHT_IR_EMIT_Pin | FLEFT_IR_EMIT_Pin | LEFT_IR_EMIT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, BIN1_Pin|BIN2_Pin|LED_RIGHT_Pin|LED_FORWARD_Pin
+                          |FRIGHT_IR_EMIT_Pin|FLEFT_IR_EMIT_Pin|LEFT_IR_EMIT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LED_BACK_Pin | LED_LEFT_Pin | AIN2_Pin | AIN1_Pin | RIGHT_IR_EMIT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LED_BACK_Pin|LED_LEFT_Pin|AIN2_Pin|AIN1_Pin
+                          |RIGHT_IR_EMIT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : BUZZER_Pin */
   GPIO_InitStruct.Pin = BUZZER_Pin;
@@ -991,7 +998,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : BIN1_Pin BIN2_Pin LED_RIGHT_Pin LED_FORWARD_Pin
                            FRIGHT_IR_EMIT_Pin FLEFT_IR_EMIT_Pin LEFT_IR_EMIT_Pin */
-  GPIO_InitStruct.Pin = BIN1_Pin | BIN2_Pin | LED_RIGHT_Pin | LED_FORWARD_Pin | FRIGHT_IR_EMIT_Pin | FLEFT_IR_EMIT_Pin | LEFT_IR_EMIT_Pin;
+  GPIO_InitStruct.Pin = BIN1_Pin|BIN2_Pin|LED_RIGHT_Pin|LED_FORWARD_Pin
+                          |FRIGHT_IR_EMIT_Pin|FLEFT_IR_EMIT_Pin|LEFT_IR_EMIT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -999,7 +1007,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : LED_BACK_Pin LED_LEFT_Pin AIN2_Pin AIN1_Pin
                            RIGHT_IR_EMIT_Pin */
-  GPIO_InitStruct.Pin = LED_BACK_Pin | LED_LEFT_Pin | AIN2_Pin | AIN1_Pin | RIGHT_IR_EMIT_Pin;
+  GPIO_InitStruct.Pin = LED_BACK_Pin|LED_LEFT_Pin|AIN2_Pin|AIN1_Pin
+                          |RIGHT_IR_EMIT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1022,9 +1031,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1037,12 +1046,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

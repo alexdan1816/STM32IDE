@@ -19,10 +19,10 @@
 #define SAMPLE_T 2 // SAMPLE TIME USE FOR VELOCITY CACULATOR
 
 #define PULSE_TO_DEG 0.23
-#define TURN_TOLERANCE 12
+#define TURN_TOLERANCE 8
 #define BACK_TOLERANCE 17
-#define TURN_DEG 105
-#define BACK_DEG 220
+#define TURN_DEG 110
+#define BACK_DEG 230
 
 #define ENCODER_PPR 570     // pulses per revolution
 

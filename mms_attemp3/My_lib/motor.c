@@ -61,6 +61,9 @@
 	volatile bool calib_ir_done_flag = false;
 	volatile bool calib_flag = false;
 
+	float K_angle = 0.02f;
+	float correction;
+
 
  double frightIRsetvalue = 0;
  double fleftIRsetvalue = 0;
@@ -227,6 +230,8 @@
 
 				begin_flag = true;
 
+
+
 				HAL_GPIO_WritePin(LED_FORWARD_GPIO_Port, LED_FORWARD_Pin, SET);
 			}
 			else if(cur_state == MOVE && begin_flag)
@@ -271,8 +276,10 @@
 
 			}
 			v_next = v_next/MMS;
-			Motor_SetTarget(_motorR, (double)v_next);
-			Motor_SetTarget(_motorL, (double)v_next);
+			float vL = (v_next/MMS) + correction;
+			float vR = (v_next/MMS) - correction;
+			Motor_SetTarget(_motorR, (double)vL);
+			Motor_SetTarget(_motorL, (double)vR);
 	}
 	void Move_backward(Motor *_motorL, Motor *_motorR)
 	{
@@ -323,6 +330,7 @@
 	}
 	void Move_Left(Motor *_motorL, Motor *_motorR)
 	{
+		correction = K_angle * angle;
 				if(cur_state == TURN_LEFT && !begin_flag)
 				{
 					Tencoder_prev_R = __HAL_TIM_GET_COUNTER(_motorR->htim_encoder);

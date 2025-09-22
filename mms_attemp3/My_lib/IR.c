@@ -160,15 +160,15 @@ void ReadIR(ADC_HandleTypeDef* hadc)
 
 bool Wall_Left()
 {
-	return (LEFT_IR > 700);
+	return (LEFT_IR > 1400);
 }
 bool Wall_Right()
 {
-	return (RIGHT_IR > 700);
+	return (RIGHT_IR > 800);
 }
 bool Wall_Front()
 {
-	return (FRIGHT_IR >700 || FLEFT_IR > 700);
+	return (FRIGHT_IR >1300 || FLEFT_IR > 1400);
 }
 
 bool Check_Start(ADC_HandleTypeDef* hadc)
