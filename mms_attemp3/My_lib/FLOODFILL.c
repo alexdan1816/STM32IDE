@@ -195,6 +195,9 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 			{
 				if(LegalCell(x, y, x, y - 1, maze))
 				{
+//					Push_act(action_stack, TURN_BACK_ACT);
+					//					Push_act(action_stack, TURN_LEFT_ACT);
+					//					Push_act(action_stack, TURN_LEFT_ACT);
 					Push_act(action_stack, TURN_BACK_ACT);
 					return true;
 				}
@@ -222,6 +225,9 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 			{
 				if(LegalCell(x, y, x - 1, y, maze))
 				{
+					Push_act(action_stack, MOVE_ACT);
+					//					Push_act(action_stack, TURN_LEFT_ACT);
+					//					Push_act(action_stack, TURN_LEFT_ACT);
 					Push_act(action_stack, TURN_BACK_ACT);
 					return true;
 				}
@@ -241,6 +247,9 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 			{
 				if(LegalCell(x, y, x, y + 1, maze))
 				{
+					Push_act(action_stack, MOVE_ACT);
+					//					Push_act(action_stack, TURN_LEFT_ACT);
+					//					Push_act(action_stack, TURN_LEFT_ACT);
 					Push_act(action_stack, TURN_BACK_ACT);
 					return true;
 				}
@@ -258,7 +267,7 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 			{
 				if(LegalCell(x, y, x - 1, y, maze))
 				{
-					Push_act(action_stack, TURN_BACK_ACT);
+					Push_act(action_stack, MOVE_ACT);
 					Push_act(action_stack, TURN_RIGHT_ACT);
 					return true;
 				}
@@ -286,6 +295,9 @@ bool FindNextCell(Maze *maze, MousePose *mousepose, Action_Stack *action_stack)
 			{
 				if(LegalCell(x, y, x + 1, y, maze))
 				{
+					Push_act(action_stack, MOVE_ACT);
+//					Push_act(action_stack, TURN_LEFT_ACT);
+//					Push_act(action_stack, TURN_LEFT_ACT);
 					Push_act(action_stack, TURN_BACK_ACT);
 					return true;
 				}
@@ -509,7 +521,7 @@ bool CalibCornetExit(MousePose *m, Maze *ma, Action_Stack *as)
 					Push_act(as, TURN_LEFT_ACT);
 					return true;
 				}
-				else if(ma->VerticalWall[y][x+1])
+				if(ma->VerticalWall[y][x+1])
 				{
 					Push_act(as, TURN_RIGHT_ACT);
 					return true;
@@ -526,7 +538,7 @@ bool CalibCornetExit(MousePose *m, Maze *ma, Action_Stack *as)
 					Push_act(as, TURN_RIGHT_ACT);
 					return true;
 				}
-				else if(ma->HorizontalWall[y+1][x])
+				if(ma->HorizontalWall[y+1][x])
 				{
 					Push_act(as, TURN_LEFT_ACT);
 					return true;
@@ -543,7 +555,7 @@ bool CalibCornetExit(MousePose *m, Maze *ma, Action_Stack *as)
 					Push_act(as, TURN_RIGHT_ACT);
 					return true;
 				}
-				else if(ma->VerticalWall[y][x+1])
+				if(ma->VerticalWall[y][x+1])
 				{
 					Push_act(as, TURN_LEFT_ACT);
 					return true;
@@ -560,7 +572,7 @@ bool CalibCornetExit(MousePose *m, Maze *ma, Action_Stack *as)
 					Push_act(as, TURN_LEFT_ACT);
 					return true;
 				}
-				else if(ma->HorizontalWall[y+1][x])
+				if(ma->HorizontalWall[y+1][x])
 				{
 					Push_act(as, TURN_RIGHT_ACT);
 					return true;
